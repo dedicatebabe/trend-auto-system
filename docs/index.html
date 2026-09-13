@@ -1,0 +1,331 @@
+<!-- ==========================================
+Version: 1.0.0
+Date: 2026-09-13
+Summary: 一般向けトレンドレビューメディアのトップページを作成
+========================================== -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</title>
+  <meta name="description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。話題作のポイントと、公式・中古での探し方をまとめます。">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:site_name" content="Trend Pick">
+  <meta property="og:title" content="Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー">
+  <meta property="og:description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。">
+  <meta property="og:url" content="https://djtaikutsu.github.io/trend-auto-system/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0b1d36;
+      --navy-mid: #163056;
+      --navy-soft: #1e3c6e;
+      --white: #ffffff;
+      --paper: #f5f7fb;
+      --text: #142033;
+      --muted: #5b6b82;
+      --line: #dbe3ef;
+      --accent: #1d4f91;
+      --shadow: 0 16px 40px rgba(11, 29, 54, 0.08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
+      color: var(--text);
+      background: var(--paper);
+      line-height: 1.75;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+    .header-inner,
+    .main,
+    .footer-inner {
+      width: min(1080px, calc(100% - 2rem));
+      margin: 0 auto;
+    }
+    .header-inner {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--navy);
+      color: var(--white);
+      font-family: "Outfit", sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .brand strong {
+      display: block;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.18rem;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: 0.01em;
+    }
+    .brand span {
+      display: block;
+      margin-top: 0.08rem;
+      color: var(--muted);
+      font-size: 0.74rem;
+      letter-spacing: 0.02em;
+    }
+    .nav {
+      display: flex;
+      gap: 1.1rem;
+      color: var(--navy-mid);
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+    .hero {
+      background:
+        radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.12), transparent 34%),
+        linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 58%, var(--navy-soft) 100%);
+      color: var(--white);
+    }
+    .hero-inner {
+      width: min(1080px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 3.4rem 0 3.1rem;
+    }
+    .hero-kicker {
+      display: inline-block;
+      margin: 0 0 0.9rem;
+      padding: 0.28rem 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      margin: 0 0 0.85rem;
+      max-width: 18em;
+      font-size: clamp(1.55rem, 3.4vw, 2.35rem);
+      line-height: 1.4;
+      font-weight: 700;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 40em;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 0.98rem;
+    }
+    .main { padding: 2.4rem 0 4.5rem; }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 0 0 1.3rem;
+    }
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.18rem;
+      color: var(--navy);
+    }
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.15rem;
+    }
+    .card {
+      overflow: hidden;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .card-media {
+      position: relative;
+      height: 168px;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+    }
+    .card-media span {
+      position: relative;
+      z-index: 1;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+    .media-anime {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 42%),
+        linear-gradient(145deg, #1a3a72, #274a8d);
+    }
+    .media-gadget {
+      background:
+        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.16), transparent 40%),
+        linear-gradient(145deg, #123056, #1d4a7a);
+    }
+    .media-goods {
+      background:
+        radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.14), transparent 42%),
+        linear-gradient(145deg, #0f2748, #21507f);
+    }
+    .card-body { padding: 1.15rem 1.15rem 1.25rem; }
+    .badge {
+      display: inline-block;
+      margin: 0 0 0.65rem;
+      padding: 0.2rem 0.62rem;
+      border-radius: 999px;
+      background: #eaf0f8;
+      color: var(--accent);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .card h3 {
+      margin: 0 0 0.55rem;
+      font-size: 1.02rem;
+      line-height: 1.5;
+      color: var(--navy);
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .note {
+      margin-top: 2rem;
+      padding: 1.1rem 1.2rem;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .site-footer {
+      background: var(--navy);
+      color: rgba(255, 255, 255, 0.78);
+    }
+    .footer-inner {
+      padding: 2.1rem 0;
+      display: grid;
+      gap: 0.4rem;
+      font-size: 0.84rem;
+    }
+    .footer-inner strong {
+      color: var(--white);
+      font-family: "Outfit", sans-serif;
+      font-size: 1rem;
+    }
+    @media (max-width: 860px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .nav { display: none; }
+      .hero-inner { padding: 2.4rem 0 2.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <div class="brand-mark">TP</div>
+        <div>
+          <strong>Trend Pick</strong>
+          <span>最新話題・アニメ・ゲーム・グッズレビュー</span>
+        </div>
+      </a>
+      <nav class="nav" aria-label="主要カテゴリ">
+        <a href="#latest">最新記事</a>
+        <a href="#anime">アニメ</a>
+        <a href="#gadget">ガジェット</a>
+        <a href="#goods">グッズ</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-kicker">Clean Trend Review</div>
+      <h1>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</h1>
+      <p>話題のアニメ、ゲーム、最新ガジェット、トレンドグッズを、事実ベースでわかりやすく紹介します。購入前に確認したいポイントと、公式・中古ショップでの探し方をまとめた一般向けメディアです。</p>
+    </div>
+  </section>
+
+  <main class="main" id="latest">
+    <div class="section-head">
+      <h2>今週の注目トピック</h2>
+      <p>アニメ化決定作、人気ガジェット、公式グッズをピックアップ</p>
+    </div>
+
+    <div class="card-grid">
+      <article class="card" id="anime">
+        <div class="card-media media-anime"><span>ANIME</span></div>
+        <div class="card-body">
+          <span class="badge">アニメ化決定</span>
+          <h3>話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方</h3>
+          <p>原作の見どころ、映像化で注目したいポイント、書籍・Blu-rayの確認先を整理しました。家族で楽しめる作品紹介です。</p>
+        </div>
+      </article>
+
+      <article class="card" id="gadget">
+        <div class="card-media media-gadget"><span>GADGET</span></div>
+        <div class="card-body">
+          <span class="badge">最新ガジェット</span>
+          <h3>軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方</h3>
+          <p>装着感、バッテリー、ノイズキャンセリングの違いを比較しやすい観点でまとめ、公式情報の確認ポイントも案内します。</p>
+        </div>
+      </article>
+
+      <article class="card" id="goods">
+        <div class="card-media media-goods"><span>GOODS</span></div>
+        <div class="card-body">
+          <span class="badge">トレンドグッズ</span>
+          <h3>人気ゲームの公式アクリルスタンド。限定品を探すときの注意点</h3>
+          <p>公式ショップと中古市場の違い、状態の見方、希望アイテムの検索キーワードをわかりやすく解説します。</p>
+        </div>
+      </article>
+    </div>
+
+    <p class="note">当サイトはアフィリエイトプログラムに参加しています。記事内のリンクから商品やサービスを購入した場合、紹介料を受け取ることがあります。紹介内容は一般向けのアニメ、ゲーム、ガジェット、公式グッズに限定しています。</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <strong>Trend Pick</strong>
+      <div>最新話題・アニメ・ゲーム・グッズレビュー</div>
+      <div>当サイトはアフィリエイト広告を含みます。18歳未満を対象とした商品やアダルトコンテンツは扱いません。</div>
+      <div>&copy; 2026 Trend Pick</div>
+    </div>
+  </footer>
+</body>
+</html>
