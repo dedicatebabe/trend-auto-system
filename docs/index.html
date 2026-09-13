@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 1.0.2
+Version: 1.1.0
 Date: 2026-09-13
-Summary: 公開URLを dedicatebabe の GitHub Pages に戻す
+Summary: ガジェット好き向けのシャープなトップデザインに刷新
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -19,20 +19,20 @@ Summary: 公開URLを dedicatebabe の GitHub Pages に戻す
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --navy: #0b1d36;
-      --navy-mid: #163056;
-      --navy-soft: #1e3c6e;
-      --white: #ffffff;
-      --paper: #f5f7fb;
-      --text: #142033;
-      --muted: #5b6b82;
-      --line: #dbe3ef;
-      --accent: #1d4f91;
-      --shadow: 0 16px 40px rgba(11, 29, 54, 0.08);
-      --radius: 18px;
+      --ink: #0e1116;
+      --ink-soft: #1a222d;
+      --paper: #eef1f4;
+      --surface: #ffffff;
+      --text: #12161c;
+      --muted: #5a6573;
+      --line: #d4dae3;
+      --mint: #2fe0b4;
+      --mint-deep: #14b892;
+      --signal: #ff6a3d;
+      --navy: #101820;
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -41,231 +41,395 @@ Summary: 公開URLを dedicatebabe の GitHub Pages に戻す
       min-height: 100vh;
       font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
       color: var(--text);
-      background: var(--paper);
-      line-height: 1.75;
+      background:
+        linear-gradient(180deg, #f7f8fa 0%, var(--paper) 40%, #e8edf2 100%);
+      line-height: 1.7;
     }
     a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; display: block; }
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      background: rgba(255, 255, 255, 0.92);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(14px);
-    }
-    .header-inner,
-    .main,
-    .footer-inner {
-      width: min(1080px, calc(100% - 2rem));
+    .wrap {
+      width: min(1120px, calc(100% - 2rem));
       margin: 0 auto;
     }
+    .site-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      color: #fff;
+    }
     .header-inner {
-      min-height: 76px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      min-height: 72px;
       gap: 1rem;
     }
     .brand {
       display: flex;
-      align-items: center;
-      gap: 0.85rem;
+      align-items: baseline;
+      gap: 0.55rem;
+      font-family: "Space Grotesk", sans-serif;
+      letter-spacing: -0.03em;
     }
-    .brand-mark {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: var(--navy);
-      color: var(--white);
-      font-family: "Outfit", sans-serif;
+    .brand-word {
+      font-size: 1.35rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
     }
-    .brand strong {
-      display: block;
-      font-family: "Outfit", sans-serif;
-      font-size: 1.18rem;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: 0.01em;
+    .brand-word em {
+      font-style: normal;
+      color: var(--mint);
     }
-    .brand span {
-      display: block;
-      margin-top: 0.08rem;
-      color: var(--muted);
-      font-size: 0.74rem;
-      letter-spacing: 0.02em;
+    .brand-sub {
+      display: none;
     }
     .nav {
       display: flex;
-      gap: 1.1rem;
-      color: var(--navy-mid);
-      font-size: 0.88rem;
+      gap: 1.25rem;
+      font-size: 0.82rem;
       font-weight: 500;
+      opacity: 0.9;
     }
+    .nav a:hover { color: var(--mint); }
+
     .hero {
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      align-items: end;
+      overflow: hidden;
+      color: #fff;
       background:
-        radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.12), transparent 34%),
-        linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 58%, var(--navy-soft) 100%);
-      color: var(--white);
+        radial-gradient(ellipse 70% 55% at 78% 42%, rgba(47, 224, 180, 0.22), transparent 58%),
+        radial-gradient(ellipse 45% 40% at 18% 80%, rgba(255, 106, 61, 0.16), transparent 55%),
+        linear-gradient(145deg, #07090c 0%, #121820 48%, #1a2733 100%);
     }
-    .hero-inner {
-      width: min(1080px, calc(100% - 2rem));
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 88%);
+      animation: gridDrift 28s linear infinite;
+      pointer-events: none;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 18%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(47, 224, 180, 0.55), transparent);
+      animation: scan 5.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .hero-visual {
+      position: absolute;
+      right: max(1rem, 8vw);
+      top: 50%;
+      width: min(420px, 46vw);
+      aspect-ratio: 1 / 1.15;
+      transform: translateY(-46%);
+      pointer-events: none;
+    }
+    .device {
+      position: absolute;
+      inset: 8% 12% 12% 18%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 28px;
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02)),
+        linear-gradient(180deg, #1b2430, #0d1218);
+      box-shadow: inset 0 0 0 1px rgba(47, 224, 180, 0.12);
+      animation: floatDevice 6s ease-in-out infinite;
+    }
+    .device::before {
+      content: "";
+      position: absolute;
+      top: 10%;
+      left: 10%;
+      right: 10%;
+      bottom: 18%;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(47, 224, 180, 0.35), transparent 42%),
+        radial-gradient(circle at 70% 70%, rgba(255, 106, 61, 0.28), transparent 45%),
+        linear-gradient(145deg, #15202c, #0a0e13);
+    }
+    .device::after {
+      content: "SPEC";
+      position: absolute;
+      left: 14%;
+      bottom: 7%;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      color: rgba(255, 255, 255, 0.55);
+    }
+    .orbit {
+      position: absolute;
+      inset: 0;
+      border: 1px dashed rgba(47, 224, 180, 0.28);
+      border-radius: 50%;
+      animation: spinSlow 22s linear infinite;
+    }
+    .orbit span {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      width: 10px;
+      height: 10px;
+      margin-left: -5px;
+      border-radius: 2px;
+      background: var(--mint);
+      transform: rotate(45deg);
+    }
+    .hero-copy {
+      position: relative;
+      z-index: 2;
+      width: min(1120px, calc(100% - 2rem));
       margin: 0 auto;
-      padding: 3.4rem 0 3.1rem;
+      padding: 7.5rem 0 4.2rem;
+      max-width: 34rem;
+      animation: riseIn 0.9s ease both;
     }
-    .hero-kicker {
-      display: inline-block;
-      margin: 0 0 0.9rem;
-      padding: 0.28rem 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      border-radius: 999px;
-      font-size: 0.76rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+    .hero-brand {
+      margin: 0 0 1rem;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(2.8rem, 8vw, 5.4rem);
+      font-weight: 700;
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+    }
+    .hero-brand span {
+      display: block;
+      color: var(--mint);
     }
     .hero h1 {
       margin: 0 0 0.85rem;
-      max-width: 18em;
-      font-size: clamp(1.55rem, 3.4vw, 2.35rem);
-      line-height: 1.4;
+      font-size: clamp(1.15rem, 2.4vw, 1.55rem);
       font-weight: 700;
+      line-height: 1.45;
+      letter-spacing: 0.01em;
     }
     .hero p {
-      margin: 0;
-      max-width: 40em;
-      color: rgba(255, 255, 255, 0.84);
-      font-size: 0.98rem;
+      margin: 0 0 1.5rem;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 0.95rem;
+      max-width: 28em;
     }
-    .main { padding: 2.4rem 0 4.5rem; }
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      min-height: 48px;
+      padding: 0 1.25rem;
+      background: var(--mint);
+      color: #06241c;
+      font-weight: 700;
+      font-size: 0.92rem;
+      border-radius: 4px;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+    .hero-cta:hover {
+      background: #5aefc8;
+      transform: translateY(-2px);
+    }
+    .hero-cta::after {
+      content: "→";
+      font-family: "Space Grotesk", sans-serif;
+    }
+
+    .main {
+      padding: 3.2rem 0 4.8rem;
+    }
     .section-head {
       display: flex;
       align-items: end;
       justify-content: space-between;
       gap: 1rem;
-      margin: 0 0 1.3rem;
+      margin: 0 0 1.5rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 2px solid var(--ink);
     }
     .section-head h2 {
       margin: 0;
-      font-size: 1.18rem;
-      color: var(--navy);
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+      letter-spacing: -0.03em;
+      color: var(--ink);
     }
     .section-head p {
       margin: 0;
       color: var(--muted);
-      font-size: 0.88rem;
+      font-size: 0.86rem;
     }
-    .card-grid {
+    .pick-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.15rem;
+      grid-template-columns: 1.25fr 1fr 1fr;
+      gap: 1rem;
     }
-    .card {
-      overflow: hidden;
-      background: var(--white);
+    .pick {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: transform 0.25s ease, border-color 0.25s ease;
     }
-    .card-media {
-      position: relative;
-      height: 168px;
-      display: grid;
-      place-items: center;
-      color: var(--white);
+    .pick:hover {
+      transform: translateY(-4px);
+      border-color: #9aa8b8;
     }
-    .card-media span {
+    .pick-media {
       position: relative;
+      height: 190px;
+      overflow: hidden;
+      color: #fff;
+    }
+    .pick:first-child .pick-media { height: 240px; }
+    .pick-media::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      opacity: 0.35;
+    }
+    .pick-media strong {
+      position: absolute;
+      left: 1rem;
+      bottom: 0.9rem;
       z-index: 1;
-      font-family: "Outfit", sans-serif;
-      font-size: 1.35rem;
-      font-weight: 700;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.45rem;
       letter-spacing: 0.08em;
     }
     .media-anime {
       background:
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 42%),
-        linear-gradient(145deg, #1a3a72, #274a8d);
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 40%),
+        linear-gradient(145deg, #1d3a5c, #0f1c2c 70%);
     }
     .media-gadget {
       background:
-        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.16), transparent 40%),
-        linear-gradient(145deg, #123056, #1d4a7a);
+        radial-gradient(circle at 75% 25%, rgba(47, 224, 180, 0.35), transparent 42%),
+        linear-gradient(150deg, #10231f, #0b1518 68%);
     }
     .media-goods {
       background:
-        radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.14), transparent 42%),
-        linear-gradient(145deg, #0f2748, #21507f);
+        radial-gradient(circle at 30% 80%, rgba(255, 106, 61, 0.32), transparent 45%),
+        linear-gradient(150deg, #2a1a14, #121014 70%);
     }
-    .card-body { padding: 1.15rem 1.15rem 1.25rem; }
+    .pick-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      padding: 1.15rem 1.15rem 1.3rem;
+      flex: 1;
+    }
     .badge {
       display: inline-block;
-      margin: 0 0 0.65rem;
-      padding: 0.2rem 0.62rem;
-      border-radius: 999px;
-      background: #eaf0f8;
-      color: var(--accent);
-      font-size: 0.72rem;
+      width: fit-content;
+      padding: 0.18rem 0.5rem;
+      background: var(--ink);
+      color: var(--mint);
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 2px;
     }
-    .card h3 {
-      margin: 0 0 0.55rem;
+    .pick h3 {
+      margin: 0;
       font-size: 1.02rem;
       line-height: 1.5;
-      color: var(--navy);
+      font-weight: 700;
+      color: var(--ink);
     }
-    .card p {
+    .pick p {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .note {
-      margin-top: 2rem;
-      padding: 1.1rem 1.2rem;
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 14px;
       color: var(--muted);
       font-size: 0.86rem;
     }
+    .note {
+      margin-top: 2rem;
+      padding: 1rem 0 0;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
     .site-footer {
-      background: var(--navy);
-      color: rgba(255, 255, 255, 0.78);
+      background: var(--ink);
+      color: rgba(255, 255, 255, 0.72);
     }
     .footer-inner {
-      padding: 2.1rem 0;
+      padding: 2.2rem 0;
       display: grid;
-      gap: 0.4rem;
-      font-size: 0.84rem;
+      gap: 0.35rem;
+      font-size: 0.82rem;
     }
     .footer-inner strong {
-      color: var(--white);
-      font-family: "Outfit", sans-serif;
-      font-size: 1rem;
+      color: #fff;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
     }
-    @media (max-width: 860px) {
-      .card-grid { grid-template-columns: 1fr; }
+    .footer-inner strong span { color: var(--mint); }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatDevice {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes scan {
+      0%, 100% { transform: translateY(0); opacity: 0.2; }
+      50% { transform: translateY(220px); opacity: 0.85; }
+    }
+    @keyframes gridDrift {
+      from { background-position: 0 0, 0 0; }
+      to { background-position: 0 48px, 48px 0; }
+    }
+
+    @media (max-width: 900px) {
+      .pick-grid { grid-template-columns: 1fr; }
+      .pick:first-child .pick-media,
+      .pick-media { height: 180px; }
       .nav { display: none; }
-      .hero-inner { padding: 2.4rem 0 2.2rem; }
+      .hero-visual {
+        width: min(280px, 58vw);
+        right: -4vw;
+        opacity: 0.55;
+      }
+      .hero-copy {
+        padding: 6.2rem 0 3.2rem;
+        max-width: 100%;
+      }
+      .brand-sub { display: none; }
     }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="index.html">
-        <div class="brand-mark">TP</div>
-        <div>
-          <strong>Trend Pick</strong>
-          <span>最新話題・アニメ・ゲーム・グッズレビュー</span>
-        </div>
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html" aria-label="Trend Pick ホーム">
+        <span class="brand-word">TREND<em>PICK</em></span>
       </a>
       <nav class="nav" aria-label="主要カテゴリ">
-        <a href="#latest">最新記事</a>
+        <a href="#latest">最新</a>
         <a href="#anime">アニメ</a>
         <a href="#gadget">ガジェット</a>
         <a href="#goods">グッズ</a>
@@ -274,44 +438,49 @@ Summary: 公開URLを dedicatebabe の GitHub Pages に戻す
   </header>
 
   <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-kicker">Clean Trend Review</div>
-      <h1>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</h1>
-      <p>話題のアニメ、ゲーム、最新ガジェット、トレンドグッズを、事実ベースでわかりやすく紹介します。購入前に確認したいポイントと、公式・中古ショップでの探し方をまとめた一般向けメディアです。</p>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="orbit"><span></span></div>
+      <div class="device"></div>
+    </div>
+    <div class="hero-copy">
+      <p class="hero-brand">TREND<span>PICK</span></p>
+      <h1>最新話題・アニメ・ゲーム・グッズレビュー</h1>
+      <p>スペック比較も、話題作の追っかけも。買う前に知りたいポイントだけを短く、鋭くまとめます。</p>
+      <a class="hero-cta" href="#latest">今週のピックを見る</a>
     </div>
   </section>
 
-  <main class="main" id="latest">
+  <main class="main wrap" id="latest">
     <div class="section-head">
-      <h2>今週の注目トピック</h2>
-      <p>アニメ化決定作、人気ガジェット、公式グッズをピックアップ</p>
+      <h2>THIS WEEK</h2>
+      <p>アニメ化決定 / 人気ガジェット / 公式グッズ</p>
     </div>
 
-    <div class="card-grid">
-      <article class="card" id="anime">
-        <div class="card-media media-anime"><span>ANIME</span></div>
-        <div class="card-body">
-          <span class="badge">アニメ化決定</span>
-          <h3>話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方</h3>
-          <p>原作の見どころ、映像化で注目したいポイント、書籍・Blu-rayの確認先を整理しました。家族で楽しめる作品紹介です。</p>
-        </div>
-      </article>
-
-      <article class="card" id="gadget">
-        <div class="card-media media-gadget"><span>GADGET</span></div>
-        <div class="card-body">
-          <span class="badge">最新ガジェット</span>
+    <div class="pick-grid">
+      <article class="pick" id="gadget">
+        <div class="pick-media media-gadget"><strong>GADGET</strong></div>
+        <div class="pick-body">
+          <span class="badge">Hot Spec</span>
           <h3>軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方</h3>
-          <p>装着感、バッテリー、ノイズキャンセリングの違いを比較しやすい観点でまとめ、公式情報の確認ポイントも案内します。</p>
+          <p>装着感、バッテリー、ノイズキャンセリングの差を比較しやすい観点で整理。公式スペックの読み方も案内します。</p>
         </div>
       </article>
 
-      <article class="card" id="goods">
-        <div class="card-media media-goods"><span>GOODS</span></div>
-        <div class="card-body">
-          <span class="badge">トレンドグッズ</span>
+      <article class="pick" id="anime">
+        <div class="pick-media media-anime"><strong>ANIME</strong></div>
+        <div class="pick-body">
+          <span class="badge">Coming Soon</span>
+          <h3>話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方</h3>
+          <p>原作の見どころと、書籍・Blu-rayを探すときの確認ポイントをまとめました。</p>
+        </div>
+      </article>
+
+      <article class="pick" id="goods">
+        <div class="pick-media media-goods"><strong>GOODS</strong></div>
+        <div class="pick-body">
+          <span class="badge">Collect</span>
           <h3>人気ゲームの公式アクリルスタンド。限定品を探すときの注意点</h3>
-          <p>公式ショップと中古市場の違い、状態の見方、希望アイテムの検索キーワードをわかりやすく解説します。</p>
+          <p>公式と中古の違い、状態の見方、検索キーワードをわかりやすく解説します。</p>
         </div>
       </article>
     </div>
@@ -320,8 +489,8 @@ Summary: 公開URLを dedicatebabe の GitHub Pages に戻す
   </main>
 
   <footer class="site-footer">
-    <div class="footer-inner">
-      <strong>Trend Pick</strong>
+    <div class="wrap footer-inner">
+      <strong>TREND<span>PICK</span></strong>
       <div>最新話題・アニメ・ゲーム・グッズレビュー</div>
       <div>当サイトはアフィリエイト広告を含みます。18歳未満を対象とした商品やアダルトコンテンツは扱いません。</div>
       <div>&copy; 2026 Trend Pick</div>
