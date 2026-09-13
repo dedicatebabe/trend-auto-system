@@ -8,15 +8,15 @@ Summary: 自動生成用 index テンプレート（CARD_GRID）
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</title>
-  <meta name="description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。">
+  <title>{{PAGE_TITLE}}</title>
+  <meta name="description" content="{{META_DESCRIPTION}}">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ja_JP">
   <meta property="og:site_name" content="Trend Pick">
-  <meta property="og:title" content="Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー">
-  <meta property="og:description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。">
-  <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
+  <meta property="og:title" content="{{PAGE_TITLE}}">
+  <meta property="og:description" content="{{META_DESCRIPTION}}">
+  <meta property="og:url" content="{{CANONICAL_URL}}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -317,9 +317,7 @@ Summary: 自動生成用 index テンプレート（CARD_GRID）
     </div>
 
     <div class="card-grid">
-      <a class="card card-link" href="article_goods_game_acrylic_stand.html" id="goods"><div class="card-media media-goods"><span>GOODS</span></div><div class="card-body"><span class="badge">トレンドグッズ</span><h3>人気ゲームの公式アクリルスタンド。限定品を探すときの注意点</h3><p>公式と中古の違い、状態確認のポイント</p></div></a>
-<a class="card card-link" href="article_anime_lightnovel_adapt_guide.html" id="anime"><div class="card-media media-anime"><span>ANIME</span></div><div class="card-body"><span class="badge">アニメ化決定</span><h3>話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方</h3><p>原作の見どころと書籍・Blu-rayの確認先</p></div></a>
-<a class="card card-link" href="article_gadget_wireless_earbuds_2026.html" id="gadget"><div class="card-media media-gadget"><span>GADGET</span></div><div class="card-body"><span class="badge">最新ガジェット</span><h3>軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方</h3><p>装着感・バッテリー・ANCの比較観点</p></div></a>
+      {{CARD_GRID}}
     </div>
 
     <p class="note">当サイトはアフィリエイトプログラムに参加しています。記事内のリンクから商品やサービスを購入した場合、紹介料を受け取ることがあります。紹介内容は一般向けのアニメ、ゲーム、ガジェット、公式グッズに限定しています。</p>
@@ -334,7 +332,7 @@ Summary: 自動生成用 index テンプレート（CARD_GRID）
         <a href="affiliate.html">アフィリエイト表記</a>
         <a href="privacy.html">プライバシーポリシー</a>
       </div>
-      <div>&copy; 2026 Trend Pick</div>
+      <div>&copy; {{YEAR}} Trend Pick</div>
     </div>
   </footer>
 </body>

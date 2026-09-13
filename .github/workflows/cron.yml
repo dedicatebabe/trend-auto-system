@@ -1,0 +1,79 @@
+# ==========================================
+# Version: 1.0.0
+# Date: 2026-09-13
+# Summary: Trend Pick 自動投稿 Cron（Pages 更新）
+# ==========================================
+name: Trend Auto Affiliate Cron
+
+on:
+  schedule:
+    # JST 09:00 = UTC 00:00
+    - cron: "0 0 * * *"
+    # JST 21:00 = UTC 12:00
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "優先カテゴリ"
+        required: false
+        default: any
+        type: choice
+        options:
+          - any
+          - anime
+          - gadget
+          - goods
+          - game
+
+permissions:
+  contents: write
+
+jobs:
+  run-affiliate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Resolve category
+        id: category
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.category }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=any" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run main.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          MERCARI_URL_TEMPLATE: ${{ secrets.MERCARI_URL_TEMPLATE }}
+          SURUGAYA_URL_TEMPLATE: ${{ secrets.SURUGAYA_URL_TEMPLATE }}
+        run: python main.py --category "${{ steps.category.outputs.value }}"
+
+      - name: Commit and push docs and posted.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ posted.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: update Trend Pick articles and posted history"
+          git push

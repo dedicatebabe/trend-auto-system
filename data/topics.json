@@ -1,0 +1,76 @@
+{
+  "topics": [
+    {
+      "topic_id": "gadget_wireless_earbuds_2026",
+      "category": "gadget",
+      "category_label": "最新ガジェット",
+      "title": "軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方",
+      "search_keyword": "ワイヤレスイヤホン ノイズキャンセリング",
+      "summary_hint": "装着感・バッテリー・ANCの比較観点",
+      "description": "通勤や学習向けの軽量ワイヤレスイヤホン。装着感、連続再生時間、ノイズキャンセリングの強さ、通話品質、防水の有無を比較しやすい観点で整理する一般向けガイド。"
+    },
+    {
+      "topic_id": "anime_lightnovel_adapt_guide",
+      "category": "anime",
+      "category_label": "アニメ化決定",
+      "title": "話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方",
+      "search_keyword": "ライトノベル アニメ化 Blu-ray",
+      "summary_hint": "原作の見どころと書籍・Blu-rayの確認先",
+      "description": "アニメ化が話題のライトノベル作品について、原作の魅力、映像化で注目したいポイント、関連書籍やBlu-rayを探すときの確認事項をまとめる家族向け紹介。"
+    },
+    {
+      "topic_id": "goods_game_acrylic_stand",
+      "category": "goods",
+      "category_label": "トレンドグッズ",
+      "title": "人気ゲームの公式アクリルスタンド。限定品を探すときの注意点",
+      "search_keyword": "公式 アクリルスタンド ゲーム",
+      "summary_hint": "公式と中古の違い、状態確認のポイント",
+      "description": "人気ゲームの公式アクリルスタンド。公式ショップと中古市場の違い、状態の見方、限定品を探すときの検索キーワードと注意点を一般向けに解説。"
+    },
+    {
+      "topic_id": "game_switch_title_pickup",
+      "category": "game",
+      "category_label": "ゲーム",
+      "title": "話題のスイッチ向け新作。買う前に確認したい3つのポイント",
+      "search_keyword": "Nintendo Switch ソフト 新作",
+      "summary_hint": "プレイ時間・難易度・周辺グッズ",
+      "description": "話題のNintendo Switch向けタイトルについて、プレイスタイル、難易度、必要な周辺機器や関連グッズを買う前に確認するポイントをまとめる。"
+    },
+    {
+      "topic_id": "gadget_usb_c_hub",
+      "category": "gadget",
+      "category_label": "最新ガジェット",
+      "title": "ノートPC向けUSB-Cハブ。ポート構成で失敗しない選び方",
+      "search_keyword": "USB-C ハブ HDMI",
+      "summary_hint": "映像出力・充電・転送速度の見極め",
+      "description": "ノートPC用USB-Cハブの選び方。HDMI出力、PD充電、USB速度、サイズ感など、購入前にチェックしたい仕様を整理した一般向けガイド。"
+    },
+    {
+      "topic_id": "goods_figure_care",
+      "category": "goods",
+      "category_label": "トレンドグッズ",
+      "title": "人気キャラクターフィギュア。箱あり中古を探すときのチェックリスト",
+      "search_keyword": "フィギュア 箱あり 中古",
+      "summary_hint": "状態・正規品・保管の注意点",
+      "description": "キャラクターフィギュアの中古購入ガイド。箱の有無、塗装欠け、正規品の見分け、保管の注意点を初心者向けにまとめる。"
+    },
+    {
+      "topic_id": "anime_blu_ray_box",
+      "category": "anime",
+      "category_label": "アニメ",
+      "title": "完結アニメのBlu-ray BOX。揃える前に見るべきスペック",
+      "search_keyword": "アニメ Blu-ray BOX",
+      "summary_hint": "収録内容・特典・中古価格の見方",
+      "description": "完結作品のBlu-ray BOXを検討する方向け。収録話数、特典、音声仕様、中古相場の見方を整理した一般向け記事。"
+    },
+    {
+      "topic_id": "gadget_mechanical_keyboard",
+      "category": "gadget",
+      "category_label": "最新ガジェット",
+      "title": "静音寄りのメカニカルキーボード。在宅作業向けの選び方",
+      "search_keyword": "メカニカルキーボード 静音",
+      "summary_hint": "スイッチ種別・配列・打鍵音",
+      "description": "在宅作業向けメカニカルキーボード。スイッチの種類、配列、打鍵音、ワイヤレス対応など、比較しやすい観点でまとめる。"
+    }
+  ]
+}
