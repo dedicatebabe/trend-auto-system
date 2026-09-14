@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.0
+# Version: 1.1.0
 # Date: 2026-09-14
-# Summary: 6時間ごとの PR TIMES→Gemini→X 自動実行
+# Summary: checkout/setup-python を Node24 対応の v7 へ更新
 # ==========================================
 name: Trend Pick Bot
 
@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
