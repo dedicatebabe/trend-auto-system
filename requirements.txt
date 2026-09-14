@@ -1,10 +1,10 @@
 # ==========================================
-# Version: 2.0.0
+# Version: 2.1.0
 # Date: 2026-09-14
-# Summary: PR TIMES RSS 取得用依存関係に更新
+# Summary: google.genai に切り替え（旧 generativeai 廃止対応）
 # ==========================================
 feedparser>=6.0.11
-google-generativeai>=0.8.0
+google-genai>=1.0.0
 tweepy>=4.14.0
 requests>=2.31.0
 python-dotenv>=1.0.0

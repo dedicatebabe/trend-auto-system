@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.0.1
+# Version: 2.1.0
 # Date: 2026-09-14
-# Summary: tweepy 遅延 import とカード追記フローを安定化
+# Summary: X投稿失敗時も記事反映を残し、Gemini移行に追従
 # ==========================================
 """
 PR TIMES RSS から話題を取得し、Gemini で解析、
@@ -182,6 +182,7 @@ def ensure_action_styles(index_path: Path) -> None:
 def post_to_x(text: str) -> str:
     """tweepy で X に投稿し、tweet id を返す。"""
     import tweepy
+    from tweepy.errors import HTTPException
 
     api_key = require_env("X_API_KEY")
     api_secret = require_env("X_API_SECRET")
@@ -194,7 +195,11 @@ def post_to_x(text: str) -> str:
         access_token_secret=access_secret,
         wait_on_rate_limit=True,
     )
-    response = client.create_tweet(text=text)
+    try:
+        response = client.create_tweet(text=text)
+    except HTTPException as exc:
+        # 402 credits depleted など課金・枠不足は致命扱いにせず上位で継続可能にする
+        raise RuntimeError(f"X 投稿失敗: {exc}") from exc
     tweet_id = ""
     if response is not None and getattr(response, "data", None):
         tweet_id = str(response.data.get("id", ""))
@@ -222,6 +227,11 @@ def parse_args() -> argparse.Namespace:
         "--skip-index",
         action="store_true",
         help="index.html 更新をスキップ",
+    )
+    parser.add_argument(
+        "--skip-x",
+        action="store_true",
+        help="X 投稿だけスキップ（記事反映と履歴更新は行う）",
     )
     return parser.parse_args()
 
@@ -278,7 +288,18 @@ def main() -> int:
             logger.info("dry-run: X 投稿と履歴更新をスキップ")
             return 0
 
-        tweet_id = post_to_x(final_tweet)
+        tweet_id = ""
+        x_error = ""
+        if args.skip_x:
+            logger.warning("--skip-x のため X 投稿をスキップしました")
+        else:
+            try:
+                tweet_id = post_to_x(final_tweet)
+            except Exception as exc:  # noqa: BLE001
+                # クレジット枯渇(402)などでも index/posted は残す
+                x_error = str(exc)
+                logger.error("X 投稿失敗（記事反映は継続）: %s", exc)
+
         history.append(
             {
                 "link": news.link,
@@ -286,15 +307,15 @@ def main() -> int:
                 "keyword": keyword,
                 "article_title": article_title,
                 "tweet_id": tweet_id,
+                "x_error": x_error,
                 "posted_at": datetime.now(timezone.utc).isoformat(),
                 "mercari_url": mercari_url,
                 "surugaya_url": surugaya_url,
             }
         )
-        # 肥大化防止（直近200件）
         history = history[-200:]
         save_posted(posted_path, history)
-        logger.info("完了")
+        logger.info("完了 tweet_id=%s", tweet_id or "(none)")
         return 0
 
     except Exception as exc:

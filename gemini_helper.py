@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.2
+# Version: 1.1.0
 # Date: 2026-09-14
-# Summary: google.generativeai を遅延 import
+# Summary: google.genai + gemini-3.6-flash へ移行
 # ==========================================
 """Gemini API によるニュース解析ヘルパー。"""
 
@@ -17,11 +17,13 @@ from rss_fetcher import NewsItem
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-3.6-flash"
 
 SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガジェットに詳しい編集者です。
 入力されたプレスリリース／ニュースを読み、次の JSON オブジェクトだけを出力してください。
 アダルト・性的・過激な内容は禁止。一般向け（全年齢）のみ。
+スポーツチームのスポンサー発表など、メルカリ・駿河屋向きでない話題は避け、
+フィギュア・グッズ・ゲーム・アニメ作品名など検索しやすい語を keyword にしてください。
 
 必須キー:
 - keyword: メルカリと駿河屋で探しやすい短い検索語（例: 呪術廻戦 フィギュア）
@@ -33,14 +35,33 @@ SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガ�
 """
 
 
-def _configure_gemini(api_key: str | None = None) -> Any:
-    import google.generativeai as genai
+def _create_client(api_key: str | None = None) -> Any:
+    from google import genai
 
     key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
     if not key:
         raise RuntimeError("環境変数 GEMINI_API_KEY が設定されていません。")
-    genai.configure(api_key=key)
-    return genai
+    return genai.Client(api_key=key)
+
+
+def _extract_response_text(response: Any) -> str:
+    texts: list[str] = []
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        parts = getattr(content, "parts", None) or []
+        for part in parts:
+            if getattr(part, "thought", False):
+                continue
+            part_text = getattr(part, "text", None)
+            if part_text:
+                texts.append(str(part_text))
+    if texts:
+        return "\n".join(texts).strip()
+    try:
+        return (response.text or "").strip()
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _extract_json_object(text: str) -> dict[str, Any]:
@@ -66,8 +87,8 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 def _fallback_result(news: NewsItem) -> dict[str, str]:
     """API 失敗時の安全なフォールバック。"""
     short_title = news.title[:40]
-    keyword = re.sub(r"[【】\[\]（）()]", " ", short_title)
-    keyword = re.sub(r"\s+", " ", keyword).strip()[:30] or "アニメ グッズ"
+    keyword = re.sub(r"[【】「」\[\]（）()『』]", " ", short_title)
+    keyword = re.sub(r"\s+", " ", keyword).strip()[:24] or "アニメ グッズ"
     body = (
         f"{news.title}\n\n"
         f"{(news.summary or '話題のリリースです。')[:280]}\n\n"
@@ -97,7 +118,9 @@ def analyze_news_with_gemini(
 
     戻り値キー: keyword, article_title, article_body, tweet_text
     """
-    genai = _configure_gemini(api_key)
+    from google.genai import types
+
+    client = _create_client(api_key)
     model_id = (model_name or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)).strip()
     user_prompt = (
         "次のニュースを解析してください。\n\n"
@@ -108,19 +131,17 @@ def analyze_news_with_gemini(
     )
 
     try:
-        model = genai.GenerativeModel(
-            model_name=model_id,
-            system_instruction=SYSTEM_PROMPT,
+        response = client.models.generate_content(
+            model=model_id,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+                temperature=0.7,
+                max_output_tokens=2048,
+                response_mime_type="application/json",
+            ),
         )
-        response = model.generate_content(
-            user_prompt,
-            generation_config={
-                "temperature": 0.7,
-                "max_output_tokens": 2048,
-                "response_mime_type": "application/json",
-            },
-        )
-        raw_text = getattr(response, "text", "") or ""
+        raw_text = _extract_response_text(response)
         data = _extract_json_object(raw_text)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Gemini 解析に失敗したためフォールバックを使用: %s", exc)

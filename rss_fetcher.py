@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.2
+# Version: 1.1.0
 # Date: 2026-09-14
-# Summary: 関連判定キーワードをアニメ・ゲーム寄りに絞る
+# Summary: 404フィード除外とスポーツ系ノイズ除外を追加
 # ==========================================
 """PR TIMES RSS から最新の関連ニュースを1件取得する。"""
 
@@ -18,8 +18,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 DEFAULT_FEED_URLS = (
-    "https://prtimes.jp/anime/index.rdf",
-    "https://prtimes.jp/tv/index.rdf",
+    # カテゴリ別は現状404のため、総合フィードを利用
     "https://prtimes.jp/index.rdf",
 )
 
@@ -30,9 +29,7 @@ RELEVANT_KEYWORDS = (
     "コミック",
     "ゲーム",
     "フィギュア",
-    "グッズ",
     "ホビー",
-    "エンタメ",
     "キャラクター",
     "声優",
     "Blu-ray",
@@ -44,14 +41,27 @@ RELEVANT_KEYWORDS = (
     "Xbox",
     "Steam",
     "ガジェット",
-    "映画",
-    "ドラマ",
-    "アイドル",
     "ラノベ",
     "ライトノベル",
     "バンダイ",
     "コトブキヤ",
     "グッドスマイル",
+    "プライズ",
+    "一番くじ",
+    "フリューくじ",
+)
+
+EXCLUDE_KEYWORDS = (
+    "B.LEAGUE",
+    "Jリーグ",
+    "プロ野球",
+    "NPB",
+    "スポンサー契約",
+    "ユニフォーム",
+    "サッカー",
+    "バスケット",
+    "野球",
+    "ゴルフ",
 )
 
 
@@ -73,6 +83,8 @@ def _strip_html(text: str) -> str:
 
 def _is_relevant(title: str, summary: str) -> bool:
     blob = f"{title}\n{summary}"
+    if any(k.lower() in blob.lower() for k in EXCLUDE_KEYWORDS):
+        return False
     return any(k.lower() in blob.lower() for k in RELEVANT_KEYWORDS)
 
 
