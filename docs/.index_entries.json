@@ -1,31 +1,33 @@
 {
   "entries": [
     {
-      "topic_id": "gadget_wireless_earbuds_2026",
-      "title": "軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方",
-      "article_filename": "article_gadget_wireless_earbuds_2026.html",
-      "created_at": "2026-09-13T13:34:11.397090+00:00",
-      "category": "gadget",
-      "category_label": "最新ガジェット",
-      "summary": "装着感・バッテリー・ANCの比較観点"
+      "article_id": "n_a178fbb46f",
+      "filename": "article_n_a178fbb46f.html",
+      "title": "業界コラムが話題。まずは元記事で内容を確認しよう",
+      "excerpt": "商品そのものではなく、読み物としての発表です。 興味があれば元の発表を読むのがおすすめです。",
+      "source_link": "https://prtimes.jp/example/news",
+      "created_at": "2026-09-16T03:45:33.925900+00:00",
+      "has_product_links": false,
+      "keyword": "業界コラム",
+      "badge": "NEWS",
+      "links": {}
     },
     {
-      "topic_id": "anime_lightnovel_adapt_guide",
-      "title": "話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方",
-      "article_filename": "article_anime_lightnovel_adapt_guide.html",
-      "created_at": "2026-09-13T13:34:11.398791+00:00",
-      "category": "anime",
-      "category_label": "アニメ化決定",
-      "summary": "原作の見どころと書籍・Blu-rayの確認先"
-    },
-    {
-      "topic_id": "goods_game_acrylic_stand",
-      "title": "人気ゲームの公式アクリルスタンド。限定品を探すときの注意点",
-      "article_filename": "article_goods_game_acrylic_stand.html",
-      "created_at": "2026-09-13T13:34:11.400279+00:00",
-      "category": "goods",
-      "category_label": "トレンドグッズ",
-      "summary": "公式と中古の違い、状態確認のポイント"
+      "article_id": "n_7eeefa717c",
+      "filename": "article_n_7eeefa717c.html",
+      "title": "フリューくじ 刀剣乱舞ONLINE が登場。買う前に確認したいポイント",
+      "excerpt": "話題のくじ情報を整理しました。 欲しい景品がある人は、公式情報と各ショップの在庫・価格を見比べるのが安心です。",
+      "source_link": "https://prtimes.jp/example/product",
+      "created_at": "2026-09-16T03:45:33.922917+00:00",
+      "has_product_links": true,
+      "keyword": "刀剣乱舞 くじ",
+      "badge": "商品",
+      "links": {
+        "amazon": "https://www.amazon.co.jp/s?k=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&tag=djtaikutsu-22",
+        "rakuten": "https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598%2F&link_type=text&id=0",
+        "mercari": "https://jp.mercari.com/search?keyword=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&status=on_sale&afid=1",
+        "surugaya": "https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=1&action=default&url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598"
+      }
     }
   ]
 }

@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.1.0
-# Date: 2026-09-14
-# Summary: checkout/setup-python を Node24 対応の v7 へ更新
+# Version: 1.2.0
+# Date: 2026-09-16
+# Summary: Amazon/楽天 Secrets と docs 全体のコミット対応
 # ==========================================
 name: Trend Pick Bot
 
@@ -35,20 +35,22 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MERCARI_AFID: ${{ secrets.MERCARI_AFID }}
           SURUGAYA_USER_ID: ${{ secrets.SURUGAYA_USER_ID }}
+          AMAZON_ASSOCIATE_TAG: ${{ secrets.AMAZON_ASSOCIATE_TAG }}
+          RAKUTEN_AF_ID: ${{ secrets.RAKUTEN_AF_ID }}
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
         run: python main.py
 
-      - name: Commit and push docs/index.html and posted.json
+      - name: Commit and push docs and posted.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/index.html posted.json
+          git add docs/ posted.json
           if git diff --staged --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "chore: update Trend Pick card from PR TIMES bot"
+          git commit -m "chore: update Trend Pick articles from PR TIMES bot"
           git push

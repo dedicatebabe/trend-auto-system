@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 1.5.0
-Date: 2026-09-14
-Summary: PR TIMES bot 用カード挿入マーカーとCTAボタンCSSを追加
+Version: 2.0.0
+Date: 2026-09-16
+Summary: メディア型トップ（注目1本＋最新リスト）
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -9,318 +9,152 @@ Summary: PR TIMES bot 用カード挿入マーカーとCTAボタンCSSを追加
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</title>
-  <meta name="description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。">
+  <meta name="description" content="アニメ、ゲーム、ガジェット、グッズの話題を読みやすくまとめるレビューメディア。">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
-  <meta property="og:locale" content="ja_JP">
   <meta property="og:site_name" content="Trend Pick">
   <meta property="og:title" content="Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー">
-  <meta property="og:description" content="アニメ、ゲーム、最新ガジェット、トレンドグッズをわかりやすく紹介するレビューメディア。">
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root {
+      --ink: #101820;
       --navy: #0b1d36;
-      --navy-mid: #163056;
-      --navy-soft: #1e3c6e;
-      --white: #ffffff;
-      --paper: #f5f7fb;
+      --paper: #f3f5f8;
+      --surface: #ffffff;
       --text: #142033;
       --muted: #5b6b82;
-      --line: #dbe3ef;
+      --line: #d7dee8;
       --accent: #1d4f91;
-      --shadow: 0 16px 40px rgba(11, 29, 54, 0.08);
-      --radius: 18px;
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       margin: 0;
-      min-height: 100vh;
       font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
       color: var(--text);
       background: var(--paper);
-      line-height: 1.75;
+      line-height: 1.7;
     }
     a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; display: block; }
+    .wrap { width: min(920px, calc(100% - 2rem)); margin: 0 auto; }
     .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255,255,255,.94);
       border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(14px);
-    }
-    .header-inner,
-    .main,
-    .footer-inner {
-      width: min(1080px, calc(100% - 2rem));
-      margin: 0 auto;
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(10px);
     }
     .header-inner {
-      min-height: 76px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
+      min-height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-    }
-    .brand-mark {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: var(--navy);
-      color: var(--white);
-      font-family: "Outfit", sans-serif;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-    .brand strong {
-      display: block;
-      font-family: "Outfit", sans-serif;
-      font-size: 1.18rem;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: 0.01em;
-    }
-    .brand span {
-      display: block;
-      margin-top: 0.08rem;
-      color: var(--muted);
-      font-size: 0.74rem;
-      letter-spacing: 0.02em;
-    }
-    .nav {
-      display: flex;
-      gap: 1.1rem;
-      color: var(--navy-mid);
-      font-size: 0.88rem;
-      font-weight: 500;
-    }
+    .brand { font-family: "Outfit", sans-serif; font-weight: 700; font-size: 1.2rem; letter-spacing: -0.03em; }
+    .brand span { color: var(--accent); }
+    .nav { display: flex; gap: 1rem; font-size: 0.86rem; color: var(--muted); font-weight: 500; }
     .hero {
-      background:
-        radial-gradient(circle at 88% 12%, rgba(255, 255, 255, 0.12), transparent 34%),
-        linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 58%, var(--navy-soft) 100%);
-      color: var(--white);
-    }
-    .hero-inner {
-      width: min(1080px, calc(100% - 2rem));
-      margin: 0 auto;
-      padding: 3.4rem 0 3.1rem;
-    }
-    .hero-kicker {
-      display: inline-block;
-      margin: 0 0 0.9rem;
-      padding: 0.28rem 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      border-radius: 999px;
-      font-size: 0.76rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      background: linear-gradient(135deg, #0b1d36 0%, #163056 60%, #1e3c6e 100%);
+      color: #fff;
+      padding: 2.4rem 0 2.1rem;
     }
     .hero h1 {
-      margin: 0 0 0.85rem;
-      max-width: 18em;
-      font-size: clamp(1.55rem, 3.4vw, 2.35rem);
-      line-height: 1.4;
+      margin: 0 0 0.55rem;
+      font-size: clamp(1.35rem, 3vw, 1.9rem);
+      line-height: 1.35;
+      font-weight: 900;
+    }
+    .hero p { margin: 0; max-width: 36em; color: rgba(255,255,255,.78); font-size: 0.95rem; }
+    .main { padding: 1.8rem 0 3.5rem; }
+    .section-label {
+      margin: 0 0 0.75rem;
+      font-family: "Outfit", sans-serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
       font-weight: 700;
     }
-    .hero p {
-      margin: 0;
-      max-width: 40em;
-      color: rgba(255, 255, 255, 0.84);
-      font-size: 0.98rem;
+    .featured {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1.35rem 1.3rem 1.4rem;
+      margin-bottom: 1.6rem;
+      transition: border-color .15s ease, transform .15s ease;
     }
-    .main { padding: 2.4rem 0 4.5rem; }
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 0 0 1.3rem;
+    .featured:hover { border-color: #9eb0c6; transform: translateY(-1px); }
+    .featured.empty { color: var(--muted); }
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 0.55rem;
+      padding: 0.15rem 0.5rem;
+      background: var(--ink);
+      color: #9fe8cf;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      border-radius: 2px;
     }
-    .section-head h2 {
-      margin: 0;
-      font-size: 1.18rem;
+    .featured h2 {
+      margin: 0 0 0.55rem;
+      font-size: clamp(1.2rem, 2.6vw, 1.55rem);
+      line-height: 1.4;
       color: var(--navy);
     }
-    .section-head p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .card-grid {
+    .featured p { margin: 0 0 0.85rem; color: var(--muted); font-size: 0.92rem; }
+    .read-more { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+    .latest-list { display: grid; gap: 0.7rem; }
+    .story-item {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.15rem;
-    }
-    .card {
-      overflow: hidden;
-      background: var(--white);
+      gap: 0.25rem;
+      background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      border-radius: 12px;
+      padding: 0.95rem 1rem;
     }
-    .card-link {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .card-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 18px 44px rgba(11, 29, 54, 0.12);
-    }
-    .card-media {
-      position: relative;
-      height: 168px;
-      display: grid;
-      place-items: center;
-      color: var(--white);
-    }
-    .card-media span {
-      position: relative;
-      z-index: 1;
-      font-family: "Outfit", sans-serif;
-      font-size: 1.35rem;
+    .story-item:hover { border-color: #9eb0c6; }
+    .story-badge {
+      width: fit-content;
+      font-size: 0.68rem;
       font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-    .media-anime {
-      background:
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18), transparent 42%),
-        linear-gradient(145deg, #1a3a72, #274a8d);
-    }
-    .media-gadget {
-      background:
-        radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.16), transparent 40%),
-        linear-gradient(145deg, #123056, #1d4a7a);
-    }
-    .media-goods {
-      background:
-        radial-gradient(circle at 30% 80%, rgba(255, 255, 255, 0.14), transparent 42%),
-        linear-gradient(145deg, #0f2748, #21507f);
-    }
-    .card-body { padding: 1.15rem 1.15rem 1.25rem; }
-    .badge {
-      display: inline-block;
-      margin: 0 0 0.65rem;
-      padding: 0.2rem 0.62rem;
-      border-radius: 999px;
-      background: #eaf0f8;
       color: var(--accent);
-      font-size: 0.72rem;
-      font-weight: 700;
       letter-spacing: 0.04em;
     }
-    .card h3 {
-      margin: 0 0 0.55rem;
-      font-size: 1.02rem;
-      line-height: 1.5;
+    .story-item h3 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.45;
       color: var(--navy);
     }
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .empty {
-      grid-column: 1 / -1;
-      margin: 0;
-      padding: 1.2rem;
-      color: var(--muted);
-      background: var(--white);
-      border: 1px dashed var(--line);
-      border-radius: 14px;
-    }
+    .story-item p { margin: 0; color: var(--muted); font-size: 0.84rem; }
+    .story-date { color: #8090a4; font-size: 0.75rem; }
+    .muted { color: var(--muted); }
     .note {
-      margin-top: 2rem;
-      padding: 1.1rem 1.2rem;
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 14px;
+      margin-top: 1.6rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
       color: var(--muted);
-      font-size: 0.86rem;
+      font-size: 0.8rem;
     }
     .site-footer {
       background: var(--navy);
-      color: rgba(255, 255, 255, 0.78);
-    }
-    .footer-inner {
-      padding: 2.1rem 0;
-      display: grid;
-      gap: 0.4rem;
-      font-size: 0.84rem;
-    }
-    .footer-inner strong {
-      color: var(--white);
-      font-family: "Outfit", sans-serif;
-      font-size: 1rem;
-    }
-    .footer-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.85rem;
-      margin-top: 0.35rem;
-    }
-    .footer-links a {
-      color: rgba(255, 255, 255, 0.9);
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-    .card-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-top: 0.9rem;
-    }
-    .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0.45rem 0.6rem;
-      border-radius: 8px;
-      color: #fff !important;
+      color: rgba(255,255,255,.75);
       font-size: 0.8rem;
-      font-weight: 700;
-      text-align: center;
     }
-    .btn-mercari { background: #ff333f; }
-    .btn-surugaya { background: #0b1d36; }
-    .source {
-      margin: 0.7rem 0 0;
-      font-size: 0.78rem;
-    }
-    .source a { color: var(--accent); text-decoration: underline; }
-    @media (max-width: 860px) {
-      .card-grid { grid-template-columns: 1fr; }
+    .footer-inner { padding: 1.5rem 0; display: grid; gap: 0.25rem; }
+    .footer-inner strong { color: #fff; font-family: "Outfit", sans-serif; }
+    .footer-inner a { color: #cfe0f5; text-decoration: underline; }
+    @media (max-width: 640px) {
       .nav { display: none; }
-      .hero-inner { padding: 2.4rem 0 2.2rem; }
     }
   </style>
 </head>
 <body>
   <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="index.html">
-        <div class="brand-mark">TP</div>
-        <div>
-          <strong>Trend Pick</strong>
-          <span>最新話題・アニメ・ゲーム・グッズレビュー</span>
-        </div>
-      </a>
-      <nav class="nav" aria-label="主要カテゴリ">
-        <a href="#latest">最新記事</a>
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html">Trend <span>Pick</span></a>
+      <nav class="nav">
+        <a href="#latest">最新</a>
         <a href="affiliate.html">アフィリエイト表記</a>
         <a href="privacy.html">プライバシー</a>
       </nav>
@@ -328,174 +162,28 @@ Summary: PR TIMES bot 用カード挿入マーカーとCTAボタンCSSを追加
   </header>
 
   <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-kicker">Clean Trend Review</div>
-      <h1>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</h1>
-      <p>話題のアニメ、ゲーム、最新ガジェット、トレンドグッズを、事実ベースでわかりやすく紹介します。購入前に確認したいポイントと、公式・中古ショップでの探し方をまとめた一般向けメディアです。</p>
+    <div class="wrap">
+      <h1>Trend Pick</h1>
+      <p>アニメ・ゲーム・ガジェット・グッズの話題を、読み物としてまとめるメディアです。商品を探す記事では相場比較リンクも案内します。</p>
     </div>
   </section>
 
-  <main class="main" id="latest">
-    <div class="section-head">
-      <h2>最新記事</h2>
-      <p>アニメ・ゲーム・ガジェット・公式グッズ</p>
+  <main class="main wrap">
+    <p class="section-label">FEATURED</p>
+    <a class="featured" href="article_n_a178fbb46f.html"><span class="eyebrow">NEWS</span><h2>業界コラムが話題。まずは元記事で内容を確認しよう</h2><p>商品そのものではなく、読み物としての発表です。 興味があれば元の発表を読むのがおすすめです。</p><span class="read-more">記事を読む →</span></a>
+
+    <p class="section-label" id="latest">LATEST</p>
+    <div class="latest-list">
+      <a class="story-item" href="article_n_7eeefa717c.html"><span class="story-badge">商品</span><h3>フリューくじ 刀剣乱舞ONLINE が登場。買う前に確認したいポイント</h3><p>話題のくじ情報を整理しました。 欲しい景品がある人は、公式情報と各ショップの在庫・価格を見比べるのが安心です。</p><span class="story-date">2026-09-16</span></a>
     </div>
 
-    <div class="card-grid">
-<!-- TREND_CARDS_START -->
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>巨額の負債から大富豪へ！『Forbesジョージア富豪100人』第67弾で描かれる驚きのコラムが話題に</h3>
-          <p>少数株ドットコムの山中裕氏が解説する『Forbesジョージア富豪100人』シリーズ第67弾が公開されました。今回注目されたのは、莫大な負債ごと炭鉱を引き受け、マンガン供給企業「サクナフシリ」の単独オーナーへと上り詰めたギオルギ・チェリゼ氏。ピンチをチャンスに変えた破天荒なビジネス戦略と、投資における判断力はビジネ...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=Forbes%20%E9%9B%91%E8%AA%8C&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3DForbes%2520%25E9%259B%2591%25E8%25AA%258C" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000444.000158730.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>「ゲームは教育だ」品川学藝高校×慶應大SFCが東京ゲームショウ2026へ共同出展！</h3>
-          <p>品川学藝高等学校と慶應義塾大学SFCがタッグを組み、東京ゲームショウ2026への共同出展を発表！「ゲームは教育だ。」をテーマに、産学高大連携による先進的なゲーム制作や学びの成果を幕張メッセの舞台で披露します。高校生と大学生が手掛けるクリエイティブな作品や教育的アプローチは、ゲーム業界の未来を感じさせる注目の展示と...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E6%9D%B1%E4%BA%AC%E3%82%B2%E3%83%BC%E3%83%A0%E3%82%B7%E3%83%A7%E3%82%A6%20%E3%82%B0%E3%83%83%E3%82%BA&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E6%259D%25B1%25E4%25BA%25AC%25E3%2582%25B2%25E3%2583%25BC%25E3%2583%25A0%25E3%2582%25B7%25E3%2583%25A7%25E3%2582%25A6%2520%25E3%2582%25B0%25E3%2583%2583%25E3%2582%25BA" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000020.000065607.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>心理ミステリーADV『病能探偵』発表！認知障害を武器に謎へ挑む新作がTGS2026で試遊出展</h3>
-          <p>Smilegate STOVEが手掛ける期待の新作ビジュアルノベル『病能探偵』が公開されました！本作は「認知障害が武器となる」という斬新かつ独特な設定が魅力の心理ミステリーゲームです。11月5日の正式発売に先立ち、東京ゲームショウ2026のSmilegate STOVEブースにて先行デモ版の試遊出展が決定しました...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E7%97%85%E8%83%BD%E6%8E%A2%E5%81%B5%20%E3%82%B2%E3%83%BC%E3%83%A0&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E7%2597%2585%25E8%2583%25BD%25E6%258E%25A2%25E5%2581%25B5%2520%25E3%2582%25B2%25E3%2583%25BC%25E3%2583%25A0" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000218.000137745.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>姿勢サポートぬいぐるみ「ふんばるず」が待望のアニメ化決定！豪華キャストとスタッフで描く癒やしと爆笑の妄想世界</h3>
-          <p>机とお腹の間に挟むことで姿勢をサポートしてくれる大人気ぬいぐるみブランド「ふんばるず」のアニメ化が決定しました！幅広い世代から愛されているあの愛らしい動物たちが、名だたる制作陣と豪華キャストの手によって映像化されます。独特のくすっと笑える妄想の世界観がどのように描かれるのか注目が集まっています。アニメ放送に向けて...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%81%B5%E3%82%93%E3%81%B0%E3%82%8B%E3%81%9A%20%E3%81%AC%E3%81%84%E3%81%90%E3%82%8B%E3%81%BF&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2581%25B5%25E3%2582%2593%25E3%2581%25B0%25E3%2582%258B%25E3%2581%259A%2520%25E3%2581%25AC%25E3%2581%2584%25E3%2581%2590%25E3%2582%258B%25E3%2581%25BF" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000540.000026206.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>大人気ゲーム『IdentityV 第五人格』と横浜市がコラボ！街を巡る限定企画やグッズに注目</h3>
-          <p>世界的人気非対称対戦型マルチプレイゲーム『IdentityV 第五人格』と横浜市観光協会のコラボレーションが決定しました！横浜の街を舞台に、ファン必見の特別企画や限定コンテンツが展開されます。作中の人気キャラクターたちが横浜の観光地とどのようにコラボするのか注目が集まります。限定オリジナルグッズや周遊イベントなど...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=IdentityV%20%E7%AC%AC%E4%BA%94%E4%BA%BA%E6%A0%BC%20%E3%82%B0%E3%83%83%E3%82%BA&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3DIdentityV%2520%25E7%25AC%25AC%25E4%25BA%2594%25E4%25BA%25BA%25E6%25A0%25BC%2520%25E3%2582%25B0%25E3%2583%2583%25E3%2582%25BA" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000189.000048026.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>「777TOWN.net」に人気爆裂機「スマスロ ビッグドリーム THE GOLDEN PUSHER」が登場！自宅のPCで本格プレイ</h3>
-          <p>サミーネットワークスが運営するPC向けパチンコ・パチスロオンラインゲーム「777TOWN.net」に、話題の最新台「スマスロ ビッグドリーム THE GOLDEN PUSHER」が早くも登場しました！ホールでも圧倒的な消化スピードと連チャン性能で人気を博している本機が、自宅のPCで心ゆくまで楽しめます。実機さなが...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%82%B9%E3%83%9E%E3%82%B9%E3%83%AD%20%E3%83%93%E3%83%83%E3%82%B0%E3%83%89%E3%83%AA%E3%83%BC%E3%83%A0&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2582%25B9%25E3%2583%259E%25E3%2582%25B9%25E3%2583%25AD%2520%25E3%2583%2593%25E3%2583%2583%25E3%2582%25B0%25E3%2583%2589%25E3%2583%25AA%25E3%2583%25BC%25E3%2583%25A0" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000001989.000002703.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>『プロセカ』に新楽曲「ヘレディティ」が追加！今すぐリズムゲームでプレイしよう</h3>
-          <p>セガとColorful Paletteが贈る大人気スマホゲーム『プロジェクトセカイ カラフルステージ！ feat. 初音ミク』にて、新たなリズムゲーム楽曲として「ヘレディティ」が追加されました！印象的なメロディと魅力的な楽曲展開が特徴で、リズムゲームとしてやりごたえ抜群の1曲となっています。ゲーム内の音楽ショップ...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%83%97%E3%83%AD%E3%82%BB%E3%82%AB%20%E3%82%B0%E3%83%83%E3%82%BA&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2583%2597%25E3%2583%25AD%25E3%2582%25BB%25E3%2582%25AB%2520%25E3%2582%25B0%25E3%2583%2583%25E3%2582%25BA" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000007665.000005397.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>大阪電気通信大学がTGS2026に17回目の出展！学生選抜作品やメタバースなどクリエイター育成の最前線を発信</h3>
-          <p>ゲーム教育で20年以上の実績を誇る大阪電気通信大学が、日本最大級のゲームの祭典「東京ゲームショウ2026」へ17回目となる出展を発表しました。ブースでは厳正な選考を勝ち抜いた学生たちの選抜ゲーム作品をはじめ、最先端のメタバース研究、産学連携プロジェクト、eスポーツへの取り組みなど、次世代クリエイター育成の成果が一...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E6%9D%B1%E4%BA%AC%E3%82%B2%E3%83%BC%E3%83%A0%E3%82%B7%E3%83%A7%E3%82%A6&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E6%259D%25B1%25E4%25BA%25AC%25E3%2582%25B2%25E3%2583%25BC%25E3%2583%25A0%25E3%2582%25B7%25E3%2583%25A7%25E3%2582%25A6" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000062.000127223.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-
-      <article class="card trend-card">
-        <div class="card-media media-anime"><span>TREND</span></div>
-        <div class="card-body">
-          <span class="badge">PR TIMES</span>
-          <h3>日本のアニメ文化を世界へ！「JAPAN ANIME FESTIVAL OKINAWA」が2027年3月に沖縄で開催決定</h3>
-          <p>日本が誇るアニメカルチャーを国内外に向けて発信する大型イベント「JAPAN ANIME FESTIVAL OKINAWA」が、2027年3月5日から7日の3日間にわたり沖縄で開催されることが決定しました！南国の豊かなロケーションを背景に、アニメファン必見のステージや展示、限定グッズの販売など、国内外のファンを魅了...</p>
-          <div class="card-actions">
-            <a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%82%A2%E3%83%8B%E3%83%A1%20%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88%20%E3%82%B0%E3%83%83%E3%82%BA&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリで探す</a>
-            <a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2582%25A2%25E3%2583%258B%25E3%2583%25A1%2520%25E3%2582%25A4%25E3%2583%2599%25E3%2583%25B3%25E3%2583%2588%2520%25E3%2582%25B0%25E3%2583%2583%25E3%2582%25BA" rel="nofollow sponsored noopener" target="_blank">駿河屋で探す</a>
-          </div>
-          <p class="source"><a href="https://prtimes.jp/main/html/rd/p/000000002.000190515.html" rel="noopener" target="_blank">元記事を見る</a></p>
-        </div>
-      </article>
-
-      <a class="card card-link" href="article_goods_game_acrylic_stand.html" id="goods"><div class="card-media media-goods"><span>GOODS</span></div><div class="card-body"><span class="badge">トレンドグッズ</span><h3>人気ゲームの公式アクリルスタンド。限定品を探すときの注意点</h3><p>公式と中古の違い、状態確認のポイント</p></div></a>
-<a class="card card-link" href="article_anime_lightnovel_adapt_guide.html" id="anime"><div class="card-media media-anime"><span>ANIME</span></div><div class="card-body"><span class="badge">アニメ化決定</span><h3>話題のライトノベルがTVアニメ化。放送時期と関連書籍の探し方</h3><p>原作の見どころと書籍・Blu-rayの確認先</p></div></a>
-<a class="card card-link" href="article_gadget_wireless_earbuds_2026.html" id="gadget"><div class="card-media media-gadget"><span>GADGET</span></div><div class="card-body"><span class="badge">最新ガジェット</span><h3>軽量ワイヤレスイヤホンの新定番。通勤・学習向けの選び方</h3><p>装着感・バッテリー・ANCの比較観点</p></div></a>
-<!-- TREND_CARDS_END -->
-    </div>
-
-    <p class="note">当サイトはアフィリエイトプログラムに参加しています。記事内のリンクから商品やサービスを購入した場合、紹介料を受け取ることがあります。紹介内容は一般向けのアニメ、ゲーム、ガジェット、公式グッズに限定しています。</p>
+    <p class="note">当サイトはアフィリエイトプログラムに参加しています。商品リンクがある記事では、リンク経由の購入で紹介料を受け取ることがあります。アダルトコンテンツは扱いません。</p>
   </main>
 
   <footer class="site-footer">
-    <div class="footer-inner">
+    <div class="wrap footer-inner">
       <strong>Trend Pick</strong>
-      <div>最新話題・アニメ・ゲーム・グッズレビュー</div>
-      <div>当サイトはアフィリエイト広告を含みます。18歳未満を対象とした商品やアダルトコンテンツは扱いません。</div>
-      <div class="footer-links">
-        <a href="affiliate.html">アフィリエイト表記</a>
-        <a href="privacy.html">プライバシーポリシー</a>
-      </div>
+      <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシー</a></div>
       <div>&copy; 2026 Trend Pick</div>
     </div>
   </footer>
