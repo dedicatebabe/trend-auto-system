@@ -11,7 +11,8 @@
       "keyword": "業界コラム",
       "badge": "NEWS",
       "image_seed": 22,
-      "links": {}
+      "links": {},
+      "body": "業界の最新コラムが注目を集めています。\n\n論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。"
     },
     {
       "article_id": "n_7eeefa717c",
@@ -29,7 +30,8 @@
         "rakuten": "https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598%2F&link_type=text&id=0",
         "mercari": "https://jp.mercari.com/search?keyword=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&status=on_sale&afid=1",
         "surugaya": "https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=1&action=default&url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598"
-      }
+      },
+      "body": "刀剣乱舞ONLINE のフリューくじが話題になっています。\n\n景品ラインナップや展開のポイントを短く整理しました。気になる人は公式情報もあわせて確認を。"
     },
     {
       "article_id": "n_1fe3d6670a",
@@ -42,7 +44,8 @@
       "keyword": "アニメ化 注目作品",
       "badge": "アニメ",
       "image_seed": 11,
-      "links": {}
+      "links": {},
+      "body": "話題の原作が映像化されます。\n\nキャラクター設計と世界観のどこが魅力かを、短く整理しました。"
     },
     {
       "article_id": "n_93bf959dc4",
@@ -55,7 +58,8 @@
       "keyword": "Nintendo Switch 新作",
       "badge": "ゲーム",
       "image_seed": 22,
-      "links": {}
+      "links": {},
+      "body": "新作タイトルの情報が広がっています。\n\n難易度、プレイ時間、周辺グッズの有無など、始める前に見たい点をまとめました。"
     },
     {
       "article_id": "n_4a49fb56a0",
@@ -68,7 +72,8 @@
       "keyword": "ワイヤレスイヤホン",
       "badge": "ガジェット",
       "image_seed": 33,
-      "links": {}
+      "links": {},
+      "body": "装着感、バッテリー、ノイズキャンセリング。\n\n失敗しにくい比較観点をわかりやすく紹介します。"
     },
     {
       "article_id": "n_57286dd9b5",
@@ -81,7 +86,8 @@
       "keyword": "アクリルスタンド",
       "badge": "カルチャー",
       "image_seed": 44,
-      "links": {}
+      "links": {},
+      "body": "公式グッズの中でも人気が高いアイテムです。\n\n傷の有無や箱あり・箱なしなど、見るべき点を整理しました。"
     },
     {
       "article_id": "n_a582f67ab6",
@@ -94,7 +100,36 @@
       "keyword": "アニメ Blu-ray",
       "badge": "アニメ",
       "image_seed": 55,
-      "links": {}
+      "links": {},
+      "body": "収録話数、特典、音声仕様。\n\n購入前に確認したいポイントをコンパクトにまとめました。"
+    },
+    {
+      "article_id": "n_f49a6fec80",
+      "filename": "article_n_f49a6fec80.html",
+      "title": "刀剣乱舞のフィギュア話題まとめ。シリーズで見るときの視点",
+      "excerpt": "刀剣乱舞ONLINE 関連のフィギュアが改めて注目されています。 キャラ選定やシリーズ横断で押さえておきたい点を短く整理しました。",
+      "source_link": "https://example.com/demo/touken-figure",
+      "created_at": "2026-09-10T10:00:00+00:00",
+      "has_product_links": true,
+      "keyword": "刀剣乱舞 フィギュア",
+      "badge": "カルチャー",
+      "image_seed": 61,
+      "links": {},
+      "body": "刀剣乱舞ONLINE 関連のフィギュアが改めて注目されています。\n\nキャラ選定やシリーズ横断で押さえておきたい点を短く整理しました。"
+    },
+    {
+      "article_id": "n_58c3e4b830",
+      "filename": "article_n_58c3e4b830.html",
+      "title": "刀剣乱舞の周辺グッズが話題。まず見るべきカテゴリ",
+      "excerpt": "刀剣乱舞関連のグッズ展開が広がっています。 アクスタや文具など、話題になりやすいカテゴリをざっくり紹介します。",
+      "source_link": "https://example.com/demo/touken-goods",
+      "created_at": "2026-09-09T10:00:00+00:00",
+      "has_product_links": true,
+      "keyword": "刀剣乱舞 グッズ",
+      "badge": "注目トピック",
+      "image_seed": 62,
+      "links": {},
+      "body": "刀剣乱舞関連のグッズ展開が広がっています。\n\nアクスタや文具など、話題になりやすいカテゴリをざっくり紹介します。"
     }
   ]
 }
