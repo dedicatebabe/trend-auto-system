@@ -1,12 +1,15 @@
 # ==========================================
-# Version: 3.1.0
+# Version: 4.0.0
 # Date: 2026-09-16
-# Summary: 曖昧な検索アフィをやめ、PR TIMES話題記事に専念
+# Summary: 売れ筋商品起点のアフィリエイト記事生成に切替
 # ==========================================
 """
-PR TIMES RSS → Gemini 解析 → 個別記事生成 → index 更新 → X 投稿。
+Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
+商品ページ直URL付き記事を生成して index 更新 → X 投稿。
 
-ショップ検索リンクはピンポイントでないため自動では付けない。
+件数ルール:
+- 各ショップの上位 RANKING_POOL(20) を見る
+- 1回の実行で各 PUBLISH_PER_SOURCE(5) 件まで記事化（最大15件）
 """
 
 from __future__ import annotations
@@ -25,9 +28,13 @@ except ImportError:  # pragma: no cover
     def load_dotenv(*_args, **_kwargs):  # type: ignore[misc]
         return False
 
-from gemini_helper import analyze_news_with_gemini
-from rss_fetcher import fetch_latest_news
-from site_builder import article_public_url, publish_article
+from gemini_helper import analyze_product_with_gemini
+from product_fetcher import (
+    PUBLISH_PER_SOURCE,
+    RANKING_POOL,
+    fetch_all_marketplace_products,
+)
+from site_builder import article_public_url, load_entries, publish_article
 
 SITE_URL = "https://dedicatebabe.github.io/trend-auto-system/"
 POSTED_JSON = "posted.json"
@@ -79,32 +86,48 @@ def post_to_x(text: str) -> str:
         consumer_secret=require_env("X_API_SECRET"),
         access_token=require_env("X_ACCESS_TOKEN"),
         access_token_secret=require_env("X_ACCESS_SECRET"),
-        wait_on_rate_limit=True,
     )
     try:
         response = client.create_tweet(text=text)
     except HTTPException as exc:
-        raise RuntimeError(f"X 投稿失敗: {exc}") from exc
+        raise RuntimeError(f"X API error: {exc}") from exc
     tweet_id = ""
-    if response is not None and getattr(response, "data", None):
+    if response and getattr(response, "data", None):
         tweet_id = str(response.data.get("id", ""))
     if not tweet_id:
-        raise RuntimeError(f"X 投稿に失敗しました: {response}")
-    logger.info("X 投稿成功 tweet_id=%s", tweet_id)
+        raise RuntimeError("X 投稿IDを取得できませんでした。")
     return tweet_id
 
 
-def build_tweet(tweet_text: str, *, article_url: str) -> str:
-    body = (tweet_text or "").strip()
-    if article_url not in body:
-        body = f"{body}\n{article_url}"
+def build_tweet(base: str, *, article_url: str) -> str:
+    body = (base or "").strip()
+    if article_url and article_url not in body:
+        body = f"{body}\n{article_url}".strip()
     return body[:280]
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trend Pick PR TIMES bot")
+    parser = argparse.ArgumentParser(description="Trend Pick product affiliate bot")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-x", action="store_true")
+    parser.add_argument(
+        "--per-source",
+        type=int,
+        default=PUBLISH_PER_SOURCE,
+        help=f"各ショップから記事化する件数（既定 {PUBLISH_PER_SOURCE}）",
+    )
+    parser.add_argument(
+        "--pool",
+        type=int,
+        default=RANKING_POOL,
+        help=f"ランキングから見る件数（既定 {RANKING_POOL}）",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="全体の最大記事化件数（0=制限なし、per-source*3まで）",
+    )
     return parser.parse_args()
 
 
@@ -116,79 +139,113 @@ def main() -> int:
 
     try:
         require_env("GEMINI_API_KEY")
-        # ショップ検索アフィは自動付与しない（ピンポイントURLが取れるまで無効）
+        require_env("AMAZON_ASSOCIATE_TAG")
+        require_env("RAKUTEN_AF_ID")
+        require_env("MERCARI_AFID")
 
         posted_path = root / POSTED_JSON
         history = load_posted(posted_path)
-        skip_links = {
-            str(p.get("link", "")).strip()
+        skip_ids = {
+            str(p.get("product_id", "")).strip()
             for p in history
-            if str(p.get("link", "")).strip()
+            if str(p.get("product_id", "")).strip()
         }
+        # 既存記事の商品URLもスキップ
+        for entry in load_entries():
+            src = (entry.source_link or "").strip()
+            if "/dp/" in src:
+                asin = src.split("/dp/")[-1].split("?")[0].split("/")[0]
+                if asin:
+                    skip_ids.add(f"amazon:{asin}")
+            if "item.rakuten.co.jp" in src or "rakuten.co.jp" in src:
+                skip_ids.add(f"rakuten:{src}")
+            for key, url in (entry.links or {}).items():
+                if key == "amazon" and "/dp/" in url:
+                    asin = url.split("/dp/")[-1].split("?")[0].split("/")[0]
+                    skip_ids.add(f"amazon:{asin}")
+                if key == "rakuten":
+                    skip_ids.add(f"rakuten:{url}")
+                    # affiliate URL 内の素の商品URLも
+                    if "item.rakuten.co.jp" in url:
+                        skip_ids.add(f"rakuten:{url}")
 
-        news = fetch_latest_news(skip_links=skip_links)
-        logger.info("取得: %s", news.title)
-
-        analyzed = analyze_news_with_gemini(news)
-        keyword = str(analyzed["keyword"])
-        article_title = str(analyzed["article_title"])
-        article_body = str(analyzed["article_body"])
-        tweet_text = str(analyzed["tweet_text"])
-        # PR TIMES起点では商品ページURLが取れないため、検索アフィは付けない
-        has_product_links = False
-        links: dict[str, str] = {}
-        logger.info("keyword=%s（ショップ検索リンクは自動付与しない）", keyword)
-
-        entry = publish_article(
-            source_link=news.link,
-            title=article_title,
-            body=article_body,
-            has_product_links=has_product_links,
-            keyword=keyword,
-            links=links,
+        products = fetch_all_marketplace_products(
+            pool=max(1, args.pool),
+            per_source=max(1, args.per_source),
+            skip_ids=skip_ids,
         )
-        article_url = article_public_url(entry.article_id)
-        final_tweet = build_tweet(tweet_text, article_url=article_url)
-        logger.info("article=%s", article_url)
-        logger.info("tweet:\n%s", final_tweet)
+        if args.limit and args.limit > 0:
+            products = products[: args.limit]
+        if not products:
+            raise RuntimeError("紹介可能な新着商品が見つかりませんでした。")
+
+        logger.info(
+            "取得商品 %s 件（pool=%s / per_source=%s）",
+            len(products),
+            args.pool,
+            args.per_source,
+        )
+
+        published = 0
+        for product in products:
+            analyzed = analyze_product_with_gemini(product)
+            links = {product.source: product.url}
+            entry = publish_article(
+                source_link=product.url,
+                title=str(analyzed["article_title"]),
+                body=str(analyzed["article_body"]),
+                has_product_links=True,
+                keyword=str(analyzed["keyword"]) or product.keyword,
+                links=links,
+                badge=product.badge,
+            )
+            article_url = article_public_url(entry.article_id)
+            final_tweet = build_tweet(
+                str(analyzed["tweet_text"]), article_url=article_url
+            )
+            logger.info("article=%s source=%s", article_url, product.source)
+
+            if args.dry_run:
+                logger.info("dry-run tweet:\n%s", final_tweet)
+                published += 1
+                continue
+
+            tweet_id = ""
+            x_error = ""
+            if args.skip_x:
+                logger.warning("--skip-x のため X 投稿をスキップ")
+            else:
+                try:
+                    tweet_id = post_to_x(final_tweet)
+                except Exception as exc:  # noqa: BLE001
+                    x_error = str(exc)
+                    logger.error("X 投稿失敗（記事反映は継続）: %s", exc)
+
+            history.append(
+                {
+                    "product_id": product.product_id,
+                    "source": product.source,
+                    "title": product.title,
+                    "url": product.url,
+                    "article_id": entry.article_id,
+                    "article_url": article_url,
+                    "tweet_id": tweet_id,
+                    "x_error": x_error,
+                    "posted_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+            # 重複防止のため都度保存
+            save_posted(posted_path, history[-300:])
+            published += 1
 
         if args.dry_run:
-            logger.info("dry-run: X 投稿と履歴更新をスキップ")
+            logger.info("dry-run: %s 件の記事化シミュレーション完了", published)
             return 0
 
-        tweet_id = ""
-        x_error = ""
-        if args.skip_x:
-            logger.warning("--skip-x のため X 投稿をスキップ")
-        else:
-            try:
-                tweet_id = post_to_x(final_tweet)
-            except Exception as exc:  # noqa: BLE001
-                x_error = str(exc)
-                logger.error("X 投稿失敗（記事反映は継続）: %s", exc)
-
-        history.append(
-            {
-                "link": news.link,
-                "title": news.title,
-                "keyword": keyword,
-                "article_title": article_title,
-                "article_id": entry.article_id,
-                "article_url": article_url,
-                "has_product_links": has_product_links,
-                "tweet_id": tweet_id,
-                "x_error": x_error,
-                "posted_at": datetime.now(timezone.utc).isoformat(),
-                "links": links,
-            }
-        )
-        history = history[-200:]
-        save_posted(posted_path, history)
-        logger.info("完了 tweet_id=%s", tweet_id or "(none)")
+        logger.info("完了: %s 件の商品記事を公開", published)
         return 0
-
-    except Exception as exc:
-        logger.exception("処理失敗: %s", exc)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("失敗: %s", exc)
         return 1
 
 

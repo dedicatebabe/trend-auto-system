@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.4.0
+# Version: 2.0.0
 # Date: 2026-09-16
-# Summary: ダミー記事削除と検索アフィ自動付与の停止に対応
+# Summary: 商品アフィリ起点のサイト生成に切替
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -226,13 +226,26 @@ def _is_usable_source_url(url: str) -> bool:
     return not any(token in value for token in blocked)
 
 
-def _source_link_html(source_link: str) -> str:
+def _source_link_html(source_link: str, *, label: str | None = None) -> str:
     if not _is_usable_source_url(source_link):
         return ""
     href = html.escape(source_link, quote=True)
+    text = label or "元の発表・記事を見る"
+    low = source_link.lower()
+    if label is None and any(
+        x in low
+        for x in (
+            "amazon.co.jp",
+            "rakuten.co.jp",
+            "hb.afl.rakuten",
+            "mercari.com",
+            "suruga-ya.jp",
+        )
+    ):
+        text = "商品ページを見る"
     return (
-        f'<a class="source-link" href="{href}" rel="noopener" target="_blank">'
-        "元の発表・記事を見る"
+        f'<a class="source-link" href="{href}" rel="noopener sponsored nofollow" target="_blank">'
+        f"{html.escape(text)}"
         "</a>"
     )
 
@@ -301,15 +314,12 @@ def _badge_class(badge: str) -> str:
 
 def _pick_featured(entries: list[ArticleEntry]) -> ArticleEntry:
     """
-    注目トピック用に1本選ぶ。
+    注目枠用に1本選ぶ。
 
-    話題カテゴリ（NEWS／アニメ等）を優先し、商品寄り記事は後ろに回す。
+    アフィリ収益優先のため、商品リンクありを先に、なければ最新話題。
     """
-    topic_first = [
-        e for e in entries if e.badge in FEATURE_TOPIC_BADGES and not e.has_product_links
-    ]
-    topic_any = [e for e in entries if e.badge in FEATURE_TOPIC_BADGES]
-    pool = topic_first or topic_any or list(entries)
+    product_first = [e for e in entries if e.has_product_links]
+    pool = product_first or list(entries)
     return sorted(pool, key=lambda e: e.created_at, reverse=True)[0]
 
 

@@ -1,9 +1,9 @@
 # ==========================================
-# Version: 2.2.0
+# Version: 3.0.0
 # Date: 2026-09-16
-# Summary: PR TIMESは話題紹介専用。検索アフィ誘導をやめる
+# Summary: 商品アフィリ向け紹介文生成を追加
 # ==========================================
-"""Gemini API によるニュース解析ヘルパー。"""
+"""Gemini API によるニュース／商品解析ヘルパー。"""
 
 from __future__ import annotations
 
@@ -31,6 +31,23 @@ SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガ�
 - article_body: 見どころ文章。プレーンテキストのみ（HTML禁止）。200〜400字。
   話題の背景とポイントを中心に書く。購入誘導やメタ説明は禁止。
 - tweet_text: X投稿。フック＋詳細誘導。100文字前後
+
+出力は JSON のみ。
+"""
+
+PRODUCT_SYSTEM_PROMPT = """あなたはアフィリエイト媒体の商品紹介ライターです。
+入力された商品情報だけを根拠に、読者が判断しやすい紹介文を書いてください。
+アダルト・性的・過激な内容は禁止。一般向けのみ。
+嘘のスペック、架空の口コミ、過度な煽りは禁止。
+値段や在庫は変動しうる前提で書く。
+
+必須キー:
+- article_title: 日本語タイトル。商品名を含めつつキャッチーに。40字前後
+- article_body: プレーンテキスト。220〜380字。
+  構成: 何の商品か / 向いている人 / 見るべきポイント / 注意点。
+  「今すぐ買え」系の強い煽りは禁止。
+- tweet_text: X投稿。100文字前後。商品名＋一言フック＋詳細誘導
+- keyword: 短い検索語（作品名・型番・一般名）
 
 出力は JSON のみ。
 """
@@ -118,6 +135,83 @@ def _fallback_result(news: NewsItem) -> dict[str, Any]:
     }
 
 
+def _fallback_product_result(product: Any) -> dict[str, Any]:
+    title = str(getattr(product, "title", "") or "注目アイテム")
+    price = getattr(product, "price", None)
+    source = str(getattr(product, "source", "") or "")
+    shop = {"amazon": "Amazon", "rakuten": "楽天", "mercari": "メルカリ"}.get(source, "ショップ")
+    price_txt = f"{price:,}円前後" if isinstance(price, int) and price > 0 else "価格は商品ページで確認"
+    short = title[:40]
+    body = (
+        f"「{title}」がいま注目されています。\n\n"
+        f"取り扱い: {shop}。参考価格の目安は {price_txt} です。"
+        "用途や付属品、状態（新品/中古）を商品ページで確認してから検討するのが安心です。"
+        "在庫と価格は変動しやすい点だけ覚えておくと失敗しにくいです。"
+    )
+    return {
+        "article_title": f"{short}｜いまの売れ筋をチェック",
+        "article_body": body,
+        "tweet_text": f"【売れ筋】{short} 詳細はこちら",
+        "keyword": short[:20],
+    }
+
+
+def analyze_product_with_gemini(
+    product: Any,
+    *,
+    api_key: str | None = None,
+    model_name: str | None = None,
+) -> dict[str, Any]:
+    """
+    商品情報から紹介文を生成する。
+
+    キー: article_title, article_body, tweet_text, keyword
+    """
+    from google.genai import types
+
+    client = _create_client(api_key)
+    model_id = (model_name or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)).strip()
+    price = getattr(product, "price", None)
+    user_prompt = (
+        "次の商品を紹介記事にしてください。\n\n"
+        f"商品名: {getattr(product, 'title', '')}\n"
+        f"ショップ: {getattr(product, 'source', '')}\n"
+        f"価格: {price if price is not None else '不明'}\n"
+        f"評価: {getattr(product, 'rating', None)}\n"
+        f"レビュー数: {getattr(product, 'review_count', None)}\n"
+        f"ランク: {getattr(product, 'rank', None)}\n"
+        f"商品URL: {getattr(product, 'url', '')}\n"
+    )
+    try:
+        response = client.models.generate_content(
+            model=model_id,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=PRODUCT_SYSTEM_PROMPT,
+                temperature=0.6,
+                max_output_tokens=2048,
+                response_mime_type="application/json",
+            ),
+        )
+        raw_text = _extract_response_text(response)
+        data = _extract_json_object(raw_text)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("商品Gemini生成失敗、フォールバック: %s", exc)
+        return _fallback_product_result(product)
+
+    result = {
+        "article_title": str(data.get("article_title", "")).strip(),
+        "article_body": re.sub(r"<[^>]+>", "", str(data.get("article_body", ""))).strip(),
+        "tweet_text": str(data.get("tweet_text", "")).strip()[:140],
+        "keyword": str(data.get("keyword", "")).strip(),
+    }
+    if not result["article_title"] or not result["article_body"] or not result["tweet_text"]:
+        return _fallback_product_result(product)
+    if not result["keyword"]:
+        result["keyword"] = str(getattr(product, "title", ""))[:20]
+    return result
+
+
 def analyze_news_with_gemini(
     news: NewsItem,
     *,
@@ -158,16 +252,8 @@ def analyze_news_with_gemini(
         logger.warning("Gemini 解析に失敗したためフォールバックを使用: %s", exc)
         return _fallback_result(news)
 
-    has_links_raw = data.get("has_product_links", None)
-    if isinstance(has_links_raw, bool):
-        has_links = has_links_raw
-    elif isinstance(has_links_raw, str):
-        has_links = has_links_raw.strip().lower() in ("true", "1", "yes")
-    else:
-        has_links = _infer_has_product_links(news)
-
     result: dict[str, Any] = {
-        "has_product_links": has_links,
+        "has_product_links": False,
         "keyword": str(data.get("keyword", "")).strip(),
         "article_title": str(data.get("article_title", "")).strip(),
         "article_body": str(data.get("article_body", "")).strip(),
