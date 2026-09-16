@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.3.1
+# Version: 1.4.0
 # Date: 2026-09-16
-# Summary: 出典リンク切れ対策と関連リンク文言の削除
+# Summary: ダミー記事削除と検索アフィ自動付与の停止に対応
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -449,114 +449,38 @@ def publish_article(
     return entry
 
 
+def _is_demo_source(url: str) -> bool:
+    return not _is_usable_source_url(url)
+
+
+def purge_demo_entries() -> list[ArticleEntry]:
+    """
+    ダミー記事を削除し、実記事だけ残して index を再生成する。
+
+    ダミーは自動では消えないため、明示的に掃除して使う。
+    """
+    entries = load_entries()
+    kept: list[ArticleEntry] = []
+    removed = 0
+    for entry in entries:
+        if _is_demo_source(entry.source_link):
+            path = DOCS / entry.filename
+            if path.exists():
+                path.unlink()
+            removed += 1
+            continue
+        kept.append(entry)
+    save_entries(kept)
+    (DOCS / "index.html").write_text(render_index_page(kept), encoding="utf-8")
+    logger.info("ダミー記事を削除: %s 件（残 %s 件）", removed, len(kept))
+    return kept
+
+
 def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
     """
-    トップの賑わい用にダミー記事を補充する。
+    互換のためのスタブ。
 
-    既存エントリが min_total 未満なら不足分を追加し、index を再生成する。
+    ダミー補充は行わず、既存ダミーを削除して実記事のみにする。
     """
-    demos = [
-        {
-            "source_link": "https://example.com/demo/anime-spring",
-            "title": "今期注目のアニメ化作品。放送前に押さえておきたい見どころ",
-            "body": "話題の原作が映像化されます。\n\nキャラクター設計と世界観のどこが魅力かを、短く整理しました。",
-            "badge": "アニメ",
-            "keyword": "アニメ化 注目作品",
-            "has_product_links": False,
-            "image_seed": 11,
-            "created_at": "2026-09-15T10:00:00+00:00",
-        },
-        {
-            "source_link": "https://example.com/demo/game-switch",
-            "title": "スイッチ向け新作が話題。プレイ前に確認したい3つのポイント",
-            "body": "新作タイトルの情報が広がっています。\n\n難易度、プレイ時間、周辺グッズの有無など、始める前に見たい点をまとめました。",
-            "badge": "ゲーム",
-            "keyword": "Nintendo Switch 新作",
-            "has_product_links": False,
-            "image_seed": 22,
-            "created_at": "2026-09-14T10:00:00+00:00",
-        },
-        {
-            "source_link": "https://example.com/demo/gadget-earbuds",
-            "title": "軽量ワイヤレスイヤホンの選び方。通勤・学習向けチェックリスト",
-            "body": "装着感、バッテリー、ノイズキャンセリング。\n\n失敗しにくい比較観点をわかりやすく紹介します。",
-            "badge": "ガジェット",
-            "keyword": "ワイヤレスイヤホン",
-            "has_product_links": False,
-            "image_seed": 33,
-            "created_at": "2026-09-13T10:00:00+00:00",
-        },
-        {
-            "source_link": "https://example.com/demo/goods-acrylic",
-            "title": "人気キャラのアクリルスタンド。探すときの状態チェック",
-            "body": "公式グッズの中でも人気が高いアイテムです。\n\n傷の有無や箱あり・箱なしなど、見るべき点を整理しました。",
-            "badge": "カルチャー",
-            "keyword": "アクリルスタンド",
-            "has_product_links": False,
-            "image_seed": 44,
-            "created_at": "2026-09-12T10:00:00+00:00",
-        },
-        {
-            "source_link": "https://example.com/demo/anime-bd",
-            "title": "完結アニメのBlu-ray。揃える前に見るべきスペック",
-            "body": "収録話数、特典、音声仕様。\n\n購入前に確認したいポイントをコンパクトにまとめました。",
-            "badge": "アニメ",
-            "keyword": "アニメ Blu-ray",
-            "has_product_links": False,
-            "image_seed": 55,
-            "created_at": "2026-09-11T10:00:00+00:00",
-        },
-    ]
-
-    entries = load_entries()
-    existing_ids = {e.article_id for e in entries}
-    for demo in demos:
-        if len(entries) >= min_total:
-            break
-        aid = article_id_from_link(str(demo["source_link"]))
-        if aid in existing_ids:
-            continue
-        publish_article(
-            source_link=str(demo["source_link"]),
-            title=str(demo["title"]),
-            body=str(demo["body"]),
-            has_product_links=bool(demo["has_product_links"]),
-            keyword=str(demo["keyword"]),
-            badge=str(demo["badge"]),
-            image_seed=int(demo["image_seed"]),
-            created_at=str(demo["created_at"]),
-            links={},
-        )
-        entries = load_entries()
-        existing_ids = {e.article_id for e in entries}
-
-    # 既存の「商品」バッジを置換して再描画
-    changed = False
-    refreshed: list[ArticleEntry] = []
-    for e in entries:
-        new_badge = _badge_for(has_product_links=e.has_product_links, badge=e.badge)
-        if new_badge != e.badge or not e.image_seed:
-            changed = True
-            refreshed.append(
-                ArticleEntry(
-                    article_id=e.article_id,
-                    filename=e.filename,
-                    title=e.title,
-                    excerpt=e.excerpt,
-                    source_link=e.source_link,
-                    created_at=e.created_at,
-                    has_product_links=e.has_product_links,
-                    keyword=e.keyword,
-                    badge=new_badge,
-                    image_seed=e.image_seed or _image_seed_from_id(e.article_id),
-                    links=e.links,
-                )
-            )
-        else:
-            refreshed.append(e)
-    if changed:
-        save_entries(refreshed)
-    else:
-        refreshed = entries
-    (DOCS / "index.html").write_text(render_index_page(refreshed), encoding="utf-8")
-    return refreshed
+    _ = min_total
+    return purge_demo_entries()

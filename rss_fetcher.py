@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.1.0
-# Date: 2026-09-14
-# Summary: 404フィード除外とスポーツ系ノイズ除外を追加
+# Version: 1.2.0
+# Date: 2026-09-16
+# Summary: 関連ニュースを複数件リスト取得できるように拡張
 # ==========================================
 """PR TIMES RSS から最新の関連ニュースを1件取得する。"""
 
@@ -49,6 +49,16 @@ RELEVANT_KEYWORDS = (
     "プライズ",
     "一番くじ",
     "フリューくじ",
+    "描き下ろし",
+    "劇場版",
+    "配信",
+    "グッズ",
+    "コラボ",
+    "VTuber",
+    "ホロライブ",
+    "にじさんじ",
+    "ジャンプ",
+    "週刊少年",
 )
 
 EXCLUDE_KEYWORDS = (
@@ -62,6 +72,11 @@ EXCLUDE_KEYWORDS = (
     "バスケット",
     "野球",
     "ゴルフ",
+    "Forbes",
+    "富豪",
+    "少数株",
+    "IR情報",
+    "決算短信",
 )
 
 
@@ -153,6 +168,37 @@ def parse_feed_entries(feed_url: str) -> list[NewsItem]:
     return items
 
 
+def list_relevant_news(
+    *,
+    limit: int = 8,
+    skip_links: Iterable[str] | None = None,
+    feed_urls: Iterable[str] | None = None,
+) -> list[NewsItem]:
+    """関連ニュースを新しい順に最大 limit 件返す。"""
+    skipped = {str(x).strip() for x in (skip_links or []) if str(x).strip()}
+    urls = tuple(feed_urls) if feed_urls else DEFAULT_FEED_URLS
+
+    collected: list[NewsItem] = []
+    for url in urls:
+        entries = parse_feed_entries(url)
+        logger.info("RSS %s: %s 件", url, len(entries))
+        collected.extend(entries)
+
+    seen_links: set[str] = set()
+    selected: list[NewsItem] = []
+    for item in collected:
+        if item.link in seen_links or item.link in skipped:
+            continue
+        seen_links.add(item.link)
+        if not _is_category_feed(item.source_feed):
+            if not _is_relevant(item.title, item.summary):
+                continue
+        selected.append(item)
+        if len(selected) >= max(1, int(limit)):
+            break
+    return selected
+
+
 def fetch_latest_news(
     *,
     skip_links: Iterable[str] | None = None,
@@ -164,32 +210,8 @@ def fetch_latest_news(
     すでに投稿済みの link はスキップする。
     見つからない場合は RuntimeError。
     """
-    skipped = {str(x).strip() for x in (skip_links or []) if str(x).strip()}
-    urls = tuple(feed_urls) if feed_urls else DEFAULT_FEED_URLS
-
-    collected: list[NewsItem] = []
-    for url in urls:
-        entries = parse_feed_entries(url)
-        logger.info("RSS %s: %s 件", url, len(entries))
-        collected.extend(entries)
-
-    seen_links: set[str] = set()
-    unique: list[NewsItem] = []
-    for item in collected:
-        if item.link in seen_links:
-            continue
-        seen_links.add(item.link)
-        unique.append(item)
-
-    for item in unique:
-        if item.link in skipped:
-            logger.info("投稿済みのためスキップ: %s", item.link)
-            continue
-        # カテゴリ別フィードはそのまま採用、総合フィードはキーワードで絞る
-        if not _is_category_feed(item.source_feed):
-            if not _is_relevant(item.title, item.summary):
-                continue
-        logger.info("採用ニュース: %s", item.title)
-        return item
-
-    raise RuntimeError("投稿可能な未処理ニュースが見つかりませんでした。")
+    items = list_relevant_news(limit=1, skip_links=skip_links, feed_urls=feed_urls)
+    if not items:
+        raise RuntimeError("投稿可能な未処理ニュースが見つかりませんでした。")
+    logger.info("採用ニュース: %s", items[0].title)
+    return items[0]

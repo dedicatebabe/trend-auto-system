@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.1.0
+# Version: 2.2.0
 # Date: 2026-09-16
-# Summary: トレンドトピック主軸の編集トーンに調整
+# Summary: PR TIMESは話題紹介専用。検索アフィ誘導をやめる
 # ==========================================
 """Gemini API によるニュース解析ヘルパー。"""
 
@@ -22,16 +22,14 @@ DEFAULT_MODEL = "gemini-3.6-flash"
 SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガジェットのトレンド編集者です。
 入力されたプレスリリース／ニュースを読み、次の JSON オブジェクトだけを出力してください。
 アダルト・性的・過激な内容は禁止。一般向け（全年齢）のみ。
-体裁は「いまの話題紹介」が主。商品紹介・購入誘導は本題にしない。
+体裁は「いまの話題紹介」が主。購入誘導・ショップ検索誘導はしない。
 
 必須キー:
-- has_product_links: boolean。話題の延長で関連ショップを案内してよい場合のみ true。
-  true例: フィギュア、一番くじ、BD、ゲームソフト、ガジェット本体、公式グッズ発売
-  false例: 企業のスポンサー契約、コラム、IR、イベント告知のみ、抽象的な話題まとめ
-- keyword: 検索用の短い語。has_product_links=false でも作品名・話題語を入れてよい
-- article_title: Web記事用のキャッチーな日本語タイトル。買う／購入／相場などの販売色を強く出しすぎない
+- has_product_links: 常に false（このパイプラインでは商品ページ直リンクを扱わない）
+- keyword: 話題の短い語（作品名・イベント名・固有名詞）
+- article_title: Web記事用のキャッチーな日本語タイトル。買う／購入／相場などの販売色は出さない
 - article_body: 見どころ文章。プレーンテキストのみ（HTML禁止）。200〜400字。
-  話題の背景とポイントを中心に書く。購入誘導や「買い物リンクは掲載していません」などのメタ説明は禁止。
+  話題の背景とポイントを中心に書く。購入誘導やメタ説明は禁止。
 - tweet_text: X投稿。フック＋詳細誘導。100文字前後
 
 出力は JSON のみ。
@@ -88,37 +86,9 @@ def _extract_json_object(text: str) -> dict[str, Any]:
 
 
 def _infer_has_product_links(news: NewsItem) -> bool:
-    blob = f"{news.title}\n{news.summary}"
-    negative = (
-        "スポンサー",
-        "富豪",
-        "Forbes",
-        "コラム",
-        "決算",
-        "IR",
-        "業務提携",
-        "就任",
-        "開設",
-        "寄付",
-    )
-    positive = (
-        "フィギュア",
-        "一番くじ",
-        "くじ",
-        "Blu-ray",
-        "ブルーレイ",
-        "発売",
-        "予約",
-        "グッズ",
-        "アクリル",
-        "ソフト",
-        "本体",
-        "イヤホン",
-        "ガジェット",
-    )
-    if any(n in blob for n in negative):
-        return False
-    return any(p in blob for p in positive)
+    """PR TIMES話題記事では検索アフィを付けない。"""
+    _ = news
+    return False
 
 
 def _fallback_result(news: NewsItem) -> dict[str, Any]:

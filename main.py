@@ -1,10 +1,12 @@
 # ==========================================
-# Version: 3.0.0
+# Version: 3.1.0
 # Date: 2026-09-16
-# Summary: 個別記事型メディア＋商品リンク出し分けに刷新
+# Summary: 曖昧な検索アフィをやめ、PR TIMES話題記事に専念
 # ==========================================
 """
 PR TIMES RSS → Gemini 解析 → 個別記事生成 → index 更新 → X 投稿。
+
+ショップ検索リンクはピンポイントでないため自動では付けない。
 """
 
 from __future__ import annotations
@@ -26,7 +28,6 @@ except ImportError:  # pragma: no cover
 from gemini_helper import analyze_news_with_gemini
 from rss_fetcher import fetch_latest_news
 from site_builder import article_public_url, publish_article
-from url_generator import generate_affiliate_urls
 
 SITE_URL = "https://dedicatebabe.github.io/trend-auto-system/"
 POSTED_JSON = "posted.json"
@@ -115,10 +116,7 @@ def main() -> int:
 
     try:
         require_env("GEMINI_API_KEY")
-        require_env("MERCARI_AFID")
-        require_env("SURUGAYA_USER_ID")
-        require_env("AMAZON_ASSOCIATE_TAG")
-        require_env("RAKUTEN_AF_ID")
+        # ショップ検索アフィは自動付与しない（ピンポイントURLが取れるまで無効）
 
         posted_path = root / POSTED_JSON
         history = load_posted(posted_path)
@@ -132,19 +130,14 @@ def main() -> int:
         logger.info("取得: %s", news.title)
 
         analyzed = analyze_news_with_gemini(news)
-        has_product_links = bool(analyzed.get("has_product_links"))
         keyword = str(analyzed["keyword"])
         article_title = str(analyzed["article_title"])
         article_body = str(analyzed["article_body"])
         tweet_text = str(analyzed["tweet_text"])
-        logger.info("has_product_links=%s keyword=%s", has_product_links, keyword)
-
+        # PR TIMES起点では商品ページURLが取れないため、検索アフィは付けない
+        has_product_links = False
         links: dict[str, str] = {}
-        if has_product_links:
-            links = generate_affiliate_urls(keyword)
-            logger.info("product links generated")
-        else:
-            logger.info("読み物記事のため商品リンクは付けません")
+        logger.info("keyword=%s（ショップ検索リンクは自動付与しない）", keyword)
 
         entry = publish_article(
             source_link=news.link,
