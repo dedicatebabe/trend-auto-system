@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.2.2
+# Version: 1.2.3
 # Date: 2026-09-16
-# Summary: カード高さの間延び解消
+# Summary: 読み物・買い物リンク無しの断り文言を本文からも除去
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -45,6 +45,17 @@ SITE_CATEGORIES = (
 )
 
 FEATURE_PRIORITY_BADGES = frozenset({"注目アイテム", "トレンドグッズ"})
+
+# 記事本文・抜粋から除去する断り／メタ文言
+_DISCLAIMER_PATTERNS = (
+    re.compile(
+        r"この記事は読み物[・･]?ニュース紹介です[。．]?.*"
+        r"(買い物|商品)リンクは掲載していません[。．]?"
+    ),
+    re.compile(r"(買い物|商品)リンクは掲載していません[。．]?"),
+    re.compile(r"この記事は読み物[・･]?ニュース紹介です[。．]?"),
+    re.compile(r"商品そのものではなく、読み物としての発表です[。．]?"),
+)
 
 
 @dataclass
@@ -177,10 +188,22 @@ def save_entries(entries: list[ArticleEntry]) -> None:
     )
 
 
+def _sanitize_public_copy(text: str) -> str:
+    """公開文面から買い物リンク無しなどの断りを取り除く。"""
+    out = (text or "").strip()
+    for pat in _DISCLAIMER_PATTERNS:
+        out = pat.sub("", out)
+    out = re.sub(r"[ \t]+\n", "\n", out)
+    out = re.sub(r"\n{3,}", "\n\n", out)
+    out = re.sub(r"[ \t]{2,}", " ", out)
+    return out.strip()
+
+
 def _plain_to_paragraphs(text: str) -> str:
-    chunks = [c.strip() for c in re.split(r"\n\s*\n", text.strip()) if c.strip()]
+    cleaned = _sanitize_public_copy(text)
+    chunks = [c.strip() for c in re.split(r"\n\s*\n", cleaned) if c.strip()]
     if not chunks:
-        chunks = [text.strip()] if text.strip() else ["記事本文はありません。"]
+        chunks = [cleaned] if cleaned else ["記事本文はありません。"]
     return "\n".join(f"<p>{html.escape(c)}</p>" for c in chunks)
 
 
@@ -358,6 +381,7 @@ def publish_article(
     aid = article_id_from_link(source_link)
     filename = article_filename(aid)
     stamp = created_at or datetime.now(timezone.utc).isoformat()
+    body = _sanitize_public_copy(body)
     excerpt = re.sub(r"\s+", " ", body).strip()[:140]
     badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
     seed = image_seed if image_seed is not None else _image_seed_from_id(aid)

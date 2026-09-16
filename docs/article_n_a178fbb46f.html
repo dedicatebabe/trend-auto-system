@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.1.1
+Version: 2.1.2
 Date: 2026-09-16
-Summary: 読み物記事の買い物リンク無し断りを削除
+Summary: 断り文言除去に合わせて記事テンプレを再同期
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -9,12 +9,12 @@ Summary: 読み物記事の買い物リンク無し断りを削除
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>業界コラムが話題。まずは元記事で内容を確認しよう | Trend Pick</title>
-  <meta name="description" content="商品そのものではなく、読み物としての発表です。 興味があれば元の発表を読むのがおすすめです。">
+  <meta name="description" content="業界の最新コラムが注目を集めています。 論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Trend Pick">
   <meta property="og:title" content="業界コラムが話題。まずは元記事で内容を確認しよう">
-  <meta property="og:description" content="商品そのものではなく、読み物としての発表です。 興味があれば元の発表を読むのがおすすめです。">
+  <meta property="og:description" content="業界の最新コラムが注目を集めています。 論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。">
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/article_n_a178fbb46f.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -63,14 +63,16 @@ Summary: 読み物記事の買い物リンク無し断りを削除
       padding: 1.35rem 1.25rem 1.6rem;
     }
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       margin: 0 0 0.7rem;
-      padding: 0.16rem 0.5rem;
-      background: var(--ink);
-      color: #9fe8cf;
+      padding: 0.22rem 0.62rem;
+      background: #e8eef7;
+      color: var(--accent);
       font-size: 0.7rem;
       font-weight: 700;
-      border-radius: 2px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
     }
     h1 {
       margin: 0 0 0.45rem;
@@ -149,14 +151,15 @@ Summary: 読み物記事の買い物リンク無し断りを削除
 
   <main class="main wrap">
     <article class="article">
-      <span class="badge">ニュース</span>
+      <span class="badge">NEWS</span>
       <h1>業界コラムが話題。まずは元記事で内容を確認しよう</h1>
       <p class="meta">2026-09-16</p>
       <div class="content">
-        <p>商品そのものではなく、読み物としての発表です。</p>
-<p>興味があれば元の発表を読むのがおすすめです。</p>
+        <p>業界の最新コラムが注目を集めています。</p>
+<p>論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。</p>
       </div>
-<a class="source-link" href="https://prtimes.jp/example/news" rel="noopener" target="_blank">元の発表・記事を見る</a>
+      
+      <a class="source-link" href="https://prtimes.jp/example/news" rel="noopener" target="_blank">元の発表・記事を見る</a>
     </article>
     <a class="back" href="index.html">← トップへ戻る</a>
   </main>

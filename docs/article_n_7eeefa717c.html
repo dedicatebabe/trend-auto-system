@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.1.1
+Version: 2.1.2
 Date: 2026-09-16
-Summary: 読み物記事の買い物リンク無し断りを削除
+Summary: 断り文言除去に合わせて記事テンプレを再同期
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -63,14 +63,16 @@ Summary: 読み物記事の買い物リンク無し断りを削除
       padding: 1.35rem 1.25rem 1.6rem;
     }
     .badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
       margin: 0 0 0.7rem;
-      padding: 0.16rem 0.5rem;
-      background: var(--ink);
-      color: #9fe8cf;
+      padding: 0.22rem 0.62rem;
+      background: #e8eef7;
+      color: var(--accent);
       font-size: 0.7rem;
       font-weight: 700;
-      border-radius: 2px;
+      border-radius: 999px;
+      letter-spacing: 0.04em;
     }
     h1 {
       margin: 0 0 0.45rem;
@@ -149,7 +151,7 @@ Summary: 読み物記事の買い物リンク無し断りを削除
 
   <main class="main wrap">
     <article class="article">
-      <span class="badge">商品ピックアップ</span>
+      <span class="badge">注目アイテム</span>
       <h1>フリューくじ 刀剣乱舞ONLINE が登場。買う前に確認したいポイント</h1>
       <p class="meta">2026-09-16</p>
       <div class="content">
