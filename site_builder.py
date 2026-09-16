@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.0.0
+# Version: 2.1.0
 # Date: 2026-09-16
-# Summary: 商品アフィリ起点のサイト生成に切替
+# Summary: 管理番号など読めない商品記事の掃除を追加
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -483,6 +483,49 @@ def purge_demo_entries() -> list[ArticleEntry]:
     save_entries(kept)
     (DOCS / "index.html").write_text(render_index_page(kept), encoding="utf-8")
     logger.info("ダミー記事を削除: %s 件（残 %s 件）", removed, len(kept))
+    return kept
+
+
+_BAD_TITLE_MARKERS = (
+    "管理番号",
+    "商品番号",
+    "フィギュア（楽天）",
+    "「Amazon」の情報をチェック",
+)
+
+
+def is_bad_product_article(entry: ArticleEntry) -> bool:
+    """人間が読めない商品紹介記事か。"""
+    title = entry.title or ""
+    excerpt = entry.excerpt or ""
+    blob = f"{title}\n{excerpt}"
+    if any(m in blob for m in _BAD_TITLE_MARKERS):
+        return True
+    if re.search(r"（楽天）\s*\d{5,}", blob):
+        return True
+    # タイトルがほぼ "Amazon" だけ
+    if re.search(r"人気商品「Amazon」", title):
+        return True
+    return False
+
+
+def purge_bad_product_entries() -> list[ArticleEntry]:
+    """管理番号・スラッグ名など読めない商品記事を削除して index 再生成。"""
+    entries = load_entries()
+    kept: list[ArticleEntry] = []
+    removed = 0
+    for entry in entries:
+        if entry.has_product_links and is_bad_product_article(entry):
+            path = DOCS / entry.filename
+            if path.exists():
+                path.unlink()
+            removed += 1
+            logger.info("ゴミ商品記事を削除: %s (%s)", entry.article_id, entry.title[:40])
+            continue
+        kept.append(entry)
+    save_entries(kept)
+    (DOCS / "index.html").write_text(render_index_page(kept), encoding="utf-8")
+    logger.info("ゴミ商品記事を削除: %s 件（残 %s 件）", removed, len(kept))
     return kept
 
 

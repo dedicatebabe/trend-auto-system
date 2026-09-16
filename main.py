@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 4.0.0
+# Version: 4.1.0
 # Date: 2026-09-16
-# Summary: 売れ筋商品起点のアフィリエイト記事生成に切替
+# Summary: 主商品直URL＋他店は商品名検索アフィを全記事に付与
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
@@ -10,6 +10,7 @@ Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
 件数ルール:
 - 各ショップの上位 RANKING_POOL(20) を見る
 - 1回の実行で各 PUBLISH_PER_SOURCE(5) 件まで記事化（最大15件）
+- 主ショップは商品直URL、他ショップは商品名検索アフィ
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote
 
 try:
     from dotenv import load_dotenv
@@ -33,8 +35,10 @@ from product_fetcher import (
     PUBLISH_PER_SOURCE,
     RANKING_POOL,
     fetch_all_marketplace_products,
+    is_usable_product_title,
 )
 from site_builder import article_public_url, load_entries, publish_article
+from url_generator import build_cross_shop_links
 
 SITE_URL = "https://dedicatebabe.github.io/trend-auto-system/"
 POSTED_JSON = "posted.json"
@@ -106,6 +110,22 @@ def build_tweet(base: str, *, article_url: str) -> str:
     return body[:280]
 
 
+def _extract_rakuten_item_url(url: str) -> str:
+    text = unquote(url or "")
+    marker = "item.rakuten.co.jp"
+    if marker not in text:
+        return ""
+    start = text.find("https://item.rakuten.co.jp")
+    if start < 0:
+        start = text.find("http://item.rakuten.co.jp")
+    if start < 0:
+        return ""
+    end = start
+    while end < len(text) and text[end] not in "&\"' <>":
+        end += 1
+    return text[start:end].rstrip("/")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Trend Pick product affiliate bot")
     parser.add_argument("--dry-run", action="store_true")
@@ -142,6 +162,7 @@ def main() -> int:
         require_env("AMAZON_ASSOCIATE_TAG")
         require_env("RAKUTEN_AF_ID")
         require_env("MERCARI_AFID")
+        require_env("SURUGAYA_USER_ID")
 
         posted_path = root / POSTED_JSON
         history = load_posted(posted_path)
@@ -157,17 +178,17 @@ def main() -> int:
                 asin = src.split("/dp/")[-1].split("?")[0].split("/")[0]
                 if asin:
                     skip_ids.add(f"amazon:{asin}")
-            if "item.rakuten.co.jp" in src or "rakuten.co.jp" in src:
-                skip_ids.add(f"rakuten:{src}")
+            raw_rk = _extract_rakuten_item_url(src)
+            if raw_rk:
+                skip_ids.add(f"rakuten:{raw_rk}")
             for key, url in (entry.links or {}).items():
                 if key == "amazon" and "/dp/" in url:
                     asin = url.split("/dp/")[-1].split("?")[0].split("/")[0]
                     skip_ids.add(f"amazon:{asin}")
                 if key == "rakuten":
-                    skip_ids.add(f"rakuten:{url}")
-                    # affiliate URL 内の素の商品URLも
-                    if "item.rakuten.co.jp" in url:
-                        skip_ids.add(f"rakuten:{url}")
+                    raw = _extract_rakuten_item_url(url)
+                    if raw:
+                        skip_ids.add(f"rakuten:{raw}")
 
         products = fetch_all_marketplace_products(
             pool=max(1, args.pool),
@@ -188,11 +209,26 @@ def main() -> int:
 
         published = 0
         for product in products:
+            if not is_usable_product_title(product.title):
+                logger.warning("ゴミタイトルのためスキップ: %s", product.title[:60])
+                continue
+
             analyzed = analyze_product_with_gemini(product)
-            links = {product.source: product.url}
+            article_title = str(analyzed["article_title"])
+            if not is_usable_product_title(article_title) or any(
+                ng in article_title for ng in ("管理番号", "商品番号", "フィギュア（楽天）")
+            ):
+                logger.warning("生成タイトルがゴミのためスキップ: %s", article_title[:60])
+                continue
+
+            links = build_cross_shop_links(
+                primary_source=product.source,
+                primary_url=product.url,
+                product_name=str(analyzed["keyword"]) or product.title,
+            )
             entry = publish_article(
                 source_link=product.url,
-                title=str(analyzed["article_title"]),
+                title=article_title,
                 body=str(analyzed["article_body"]),
                 has_product_links=True,
                 keyword=str(analyzed["keyword"]) or product.keyword,
@@ -203,7 +239,7 @@ def main() -> int:
             final_tweet = build_tweet(
                 str(analyzed["tweet_text"]), article_url=article_url
             )
-            logger.info("article=%s source=%s", article_url, product.source)
+            logger.info("article=%s source=%s links=%s", article_url, product.source, list(links))
 
             if args.dry_run:
                 logger.info("dry-run tweet:\n%s", final_tweet)
@@ -241,6 +277,9 @@ def main() -> int:
         if args.dry_run:
             logger.info("dry-run: %s 件の記事化シミュレーション完了", published)
             return 0
+
+        if published == 0:
+            raise RuntimeError("公開可能な商品記事が0件でした。")
 
         logger.info("完了: %s 件の商品記事を公開", published)
         return 0

@@ -1,13 +1,14 @@
 # ==========================================
-# Version: 2.0.0
+# Version: 2.1.0
 # Date: 2026-09-16
-# Summary: Amazon・楽天を追加し商品リンク出し分けに対応
+# Summary: 主商品直URL＋他店は商品名検索アフィを組み合わせる
 # ==========================================
-"""キーワードから各ショップのアフィリエイト／検索URLを組み立てる。"""
+"""キーワード／商品ページから各ショップのアフィリエイトURLを組み立てる。"""
 
 from __future__ import annotations
 
 import os
+import re
 from urllib.parse import quote
 
 
@@ -62,7 +63,6 @@ def generate_rakuten_url(keyword: str, *, af_id: str | None = None) -> str:
     rid = (af_id if af_id is not None else os.getenv("RAKUTEN_AF_ID", "")).strip()
     if not rid:
         raise RuntimeError("環境変数 RAKUTEN_AF_ID が設定されていません。")
-    # 検索URLはパスにキーワードを入れる
     encoded_kw = quote(keyword.strip(), safe="")
     search_url = f"https://search.rakuten.co.jp/search/mall/{encoded_kw}/"
     return (
@@ -74,7 +74,7 @@ def generate_rakuten_url(keyword: str, *, af_id: str | None = None) -> str:
 
 def generate_affiliate_urls(keyword: str) -> dict[str, str]:
     """
-    商品向けリンク一式を返す。
+    商品名検索向けリンク一式を返す。
 
     戻り値キー: amazon, rakuten, mercari, surugaya
     """
@@ -86,3 +86,36 @@ def generate_affiliate_urls(keyword: str) -> dict[str, str]:
         "mercari": generate_mercari_url(keyword),
         "surugaya": generate_surugaya_url(keyword),
     }
+
+
+def clean_search_keyword(name: str) -> str:
+    """他店検索用に商品名を短く整える。"""
+    text = (name or "").strip()
+    text = re.sub(r"[【】\[\]（）()『』「」]", " ", text)
+    text = re.sub(r"(管理番号|商品番号|品番)[:：]?\s*[A-Za-z0-9\-]+", " ", text)
+    text = re.sub(r"\bB0[A-Z0-9]{8}\b", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > 48:
+        text = text[:48].rsplit(" ", 1)[0] or text[:48]
+    return text
+
+
+def build_cross_shop_links(
+    *,
+    primary_source: str,
+    primary_url: str,
+    product_name: str,
+) -> dict[str, str]:
+    """
+    主ショップは商品直URL、他ショップは商品名検索アフィ。
+
+    例: Amazon商品なら amazon=直URL、楽天/メルカリ/駿河屋=商品名検索
+    """
+    keyword = clean_search_keyword(product_name)
+    if not keyword:
+        raise ValueError("検索用の商品名が空です。")
+    links = generate_affiliate_urls(keyword)
+    source = (primary_source or "").strip().lower()
+    if source in links and primary_url.strip():
+        links[source] = primary_url.strip()
+    return links

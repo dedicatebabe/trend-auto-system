@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.2
+# Version: 1.2.0
 # Date: 2026-09-16
-# Summary: 商品タイトル補強をAmazon/楽天両対応に
+# Summary: 楽天は検索HTMLの実商品名を採用し管理番号記事を防ぐ
 # ==========================================
 """
 売れ筋ランキング起点の商品取得。
@@ -52,6 +52,17 @@ ADULT_NG = (
     "下着",
 )
 
+# 人間が読めない・ゴミタイトル
+BAD_TITLE_PATTERNS = (
+    re.compile(r"^Amazon商品\s*B0", re.I),
+    re.compile(r"^Amazon$", re.I),
+    re.compile(r"管理番号"),
+    re.compile(r"商品番号"),
+    re.compile(r"（楽天）\s*\d+"),
+    re.compile(r"フィギュア（楽天）"),
+    re.compile(r"^https?://", re.I),
+)
+
 
 @dataclass
 class ProductItem:
@@ -94,6 +105,21 @@ def _session() -> requests.Session:
 
 def _is_ng_title(title: str) -> bool:
     return any(ng in (title or "") for ng in ADULT_NG)
+
+
+def is_usable_product_title(title: str) -> bool:
+    """紹介に耐える商品名か。"""
+    text = (title or "").strip()
+    if len(text) < 8:
+        return False
+    if _is_ng_title(text):
+        return False
+    if any(pat.search(text) for pat in BAD_TITLE_PATTERNS):
+        return False
+    # 数字だけのIDっぽい末尾だけ、などは除外
+    if re.fullmatch(r".{0,20}\d{6,}", text) and "フィギュア（楽天）" in text:
+        return False
+    return True
 
 
 def _badge_for_title(title: str) -> str:
@@ -199,30 +225,57 @@ def fetch_rakuten_ranking(
         except Exception as exc:  # noqa: BLE001
             logger.warning("楽天APIランキング失敗、HTMLへフォールバック: %s", exc)
 
-    # HTML フォールバック（ジャンル検索の商品カードから直URL抽出）
-    # ランキングページはタイムアウトしやすいので検索結果を使う
+    # HTML フォールバック（検索結果の JSON-LD / アンカー文言から実商品名＋直URL）
     queries = ("フィギュア", "Nintendo Switch", "ワイヤレスイヤホン")
     seen: set[str] = set()
     for q in queries:
         page = f"https://search.rakuten.co.jp/search/mall/{quote(q)}/"
         try:
-            html_text = sess.get(page, timeout=15).text
+            html_text = sess.get(page, timeout=20).text
         except requests.RequestException as exc:
             logger.warning("楽天検索HTML取得失敗 (%s): %s", q, exc)
             continue
 
-        pattern = re.compile(
-            r'https://item\.rakuten\.co\.jp/[a-zA-Z0-9_\-./%]+',
-            re.I,
-        )
-        for item_url in pattern.findall(html_text):
-            item_url = item_url.split("?")[0].rstrip('"')
+        pairs: list[tuple[str, str]] = []
+
+        # 1) schema.org ItemList（最も安定）
+        for block in re.findall(
+            r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
+            html_text,
+            flags=re.I | re.S,
+        ):
+            if '"ItemList"' not in block and '"Product"' not in block:
+                continue
+            for m in re.finditer(
+                r'"name"\s*:\s*"((?:\\.|[^"\\]){8,200})"[\s\S]{0,400}?'
+                r'"url"\s*:\s*"(https://item\.rakuten\.co\.jp/[^"]+)"',
+                block,
+            ):
+                title = html_unescape(m.group(1))
+                title = title.replace('\\"', '"').replace("\\/", "/")
+                title = re.sub(r"\s+", " ", title).strip()
+                item_url = m.group(2).split("?")[0].rstrip("/")
+                pairs.append((item_url + "/", title))
+
+        # 2) アンカー文言フォールバック
+        if not pairs:
+            for m in re.finditer(
+                r'href="(https://item\.rakuten\.co\.jp/[^"]+)"[^>]*>'
+                r"([^<]{10,160})<",
+                html_text,
+                flags=re.I,
+            ):
+                item_url = m.group(1).split("?")[0].rstrip("/") + "/"
+                title = html_unescape(m.group(2)).strip()
+                title = re.sub(r"\s+", " ", title)
+                pairs.append((item_url, title))
+
+        for item_url, title in pairs:
             if item_url in seen:
                 continue
+            if not is_usable_product_title(title):
+                continue
             seen.add(item_url)
-            # タイトルはURLスラッグから暫定生成（後段Geminiで整える）
-            slug = item_url.rstrip("/").split("/")[-1]
-            title = f"{q}（楽天） {slug[:24]}"
             try:
                 aff = rakuten_product_affiliate_url(item_url)
             except RuntimeError:
@@ -231,11 +284,11 @@ def fetch_rakuten_ranking(
                 ProductItem(
                     product_id=f"rakuten:{item_url}",
                     source="rakuten",
-                    title=title,
+                    title=title[:120],
                     url=aff,
                     rank=len(items) + 1,
-                    keyword=q,
-                    badge=_badge_for_title(q),
+                    keyword=title[:40],
+                    badge=_badge_for_title(title),
                     extra={"raw_url": item_url},
                 )
             )
@@ -490,13 +543,17 @@ def enrich_product_titles(
         if product.source != "rakuten":
             out.append(product)
             continue
+        # 検索HTMLで実商品名が取れている場合は商品ページを叩かない
+        if is_usable_product_title(product.title):
+            out.append(product)
+            continue
         raw = str((product.extra or {}).get("raw_url") or "").strip()
         if not raw:
             out.append(product)
             continue
         title = product.title
         try:
-            html_text = sess.get(raw, timeout=12).text
+            html_text = sess.get(raw, timeout=20).text
             for pat in (
                 r'<meta\s+property="og:title"\s+content="([^"]+)"',
                 r"<title>([^<]+)</title>",
@@ -536,17 +593,22 @@ def select_products_for_publish(
     *,
     limit: int = PUBLISH_PER_SOURCE,
     skip_ids: set[str] | None = None,
+    require_usable_title: bool = True,
 ) -> list[ProductItem]:
     """スコア順に採用。検索URLは除外済み前提。"""
     skipped = skip_ids or set()
-    filtered = [
-        p
-        for p in products
-        if p.product_id not in skipped
-        and p.url
-        and "/search" not in p.url
-        and not _is_ng_title(p.title)
-    ]
+    filtered = []
+    for p in products:
+        if p.product_id in skipped or not p.url or "/search" in p.url:
+            continue
+        if _is_ng_title(p.title):
+            continue
+        # 楽天HTMLフォールバックは title 空で来るので、選別時は許可し enrich 後に落とす
+        if require_usable_title and p.title.strip() and not is_usable_product_title(p.title):
+            continue
+        if require_usable_title and not p.title.strip() and p.source != "rakuten":
+            continue
+        filtered.append(p)
     filtered.sort(key=lambda p: p.score, reverse=True)
     return filtered[: max(0, int(limit))]
 
@@ -571,7 +633,28 @@ def fetch_all_marketplace_products(
     ]
     selected: list[ProductItem] = []
     for name, rows in buckets:
-        picked = select_products_for_publish(rows, limit=per_source, skip_ids=skip_ids)
-        logger.info("%s: pool=%s publish=%s", name, len(rows), len(picked))
+        # タイトル補強前は空タイトル許可（楽天HTML）
+        picked = select_products_for_publish(
+            rows, limit=per_source * 2, skip_ids=skip_ids, require_usable_title=False
+        )
+        logger.info("%s: pool=%s candidate=%s", name, len(rows), len(picked))
         selected.extend(picked)
-    return enrich_product_titles(selected, session=sess)
+
+    enriched = enrich_product_titles(selected, session=sess)
+    usable = [p for p in enriched if is_usable_product_title(p.title)]
+    # ソース別に上限
+    out: list[ProductItem] = []
+    counts: dict[str, int] = {}
+    for p in sorted(usable, key=lambda x: x.score, reverse=True):
+        n = counts.get(p.source, 0)
+        if n >= per_source:
+            continue
+        counts[p.source] = n + 1
+        out.append(p)
+    logger.info(
+        "usable after enrich: %s / published: %s (%s)",
+        len(usable),
+        len(out),
+        counts,
+    )
+    return out
