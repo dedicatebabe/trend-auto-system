@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.4.0
+Version: 2.5.0
 Date: 2026-09-16
-Summary: トレンドトピック主軸の文言・構成に調整
+Summary: 商品カードにサムネイル画像表示を追加
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -213,6 +213,23 @@ Summary: トレンドトピック主軸の文言・構成に調整
       transform: translateY(-4px);
       box-shadow: var(--shadow-hover);
       border-color: #b7c4d4;
+    }
+    .card-media {
+      aspect-ratio: 16 / 10;
+      background: #eef2f7;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line);
+    }
+    .card-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #fff;
+    }
+    .card-featured .card-media {
+      aspect-ratio: 16 / 9;
+      max-height: 280px;
     }
     .card-body {
       display: flex;

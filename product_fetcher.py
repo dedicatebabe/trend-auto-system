@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.2.0
+# Version: 1.3.1
 # Date: 2026-09-16
-# Summary: 楽天は検索HTMLの実商品名を採用し管理番号記事を防ぐ
+# Summary: Amazon商品画像のロゴ誤検知を排除
 # ==========================================
 """
 売れ筋ランキング起点の商品取得。
@@ -101,6 +101,25 @@ def _session() -> requests.Session:
         }
     )
     return s
+
+
+def _is_good_product_image(url: str) -> bool:
+    """ロゴ・スピナー等のゴミ画像を弾く。"""
+    u = (url or "").strip().lower()
+    if not u.startswith(("http://", "https://")):
+        return False
+    bad = (
+        "share-icons",
+        "amazon.png",
+        "spinner",
+        "grey-pixel",
+        "transparent-pixel",
+        "loading",
+        "placeholder",
+    )
+    if any(b in u for b in bad):
+        return False
+    return True
 
 
 def _is_ng_title(title: str) -> bool:
@@ -236,7 +255,7 @@ def fetch_rakuten_ranking(
             logger.warning("楽天検索HTML取得失敗 (%s): %s", q, exc)
             continue
 
-        pairs: list[tuple[str, str]] = []
+        pairs: list[tuple[str, str, str]] = []
 
         # 1) schema.org ItemList（最も安定）
         for block in re.findall(
@@ -247,15 +266,24 @@ def fetch_rakuten_ranking(
             if '"ItemList"' not in block and '"Product"' not in block:
                 continue
             for m in re.finditer(
-                r'"name"\s*:\s*"((?:\\.|[^"\\]){8,200})"[\s\S]{0,400}?'
+                r'"@type"\s*:\s*"Product"[\s\S]*?'
+                r'"name"\s*:\s*"((?:\\.|[^"\\]){8,200})"([\s\S]{0,800}?)'
                 r'"url"\s*:\s*"(https://item\.rakuten\.co\.jp/[^"]+)"',
                 block,
             ):
                 title = html_unescape(m.group(1))
                 title = title.replace('\\"', '"').replace("\\/", "/")
                 title = re.sub(r"\s+", " ", title).strip()
-                item_url = m.group(2).split("?")[0].rstrip("/")
-                pairs.append((item_url + "/", title))
+                mid = m.group(2)
+                img_m = re.search(
+                    r'"image"\s*:\s*\[\s*"([^"]+)"',
+                    mid,
+                ) or re.search(r'"image"\s*:\s*"([^"]+)"', mid)
+                image_url = ""
+                if img_m:
+                    image_url = html_unescape(img_m.group(1)).replace("\\/", "/")
+                item_url = m.group(3).split("?")[0].rstrip("/")
+                pairs.append((item_url + "/", title, image_url))
 
         # 2) アンカー文言フォールバック
         if not pairs:
@@ -268,9 +296,9 @@ def fetch_rakuten_ranking(
                 item_url = m.group(1).split("?")[0].rstrip("/") + "/"
                 title = html_unescape(m.group(2)).strip()
                 title = re.sub(r"\s+", " ", title)
-                pairs.append((item_url, title))
+                pairs.append((item_url, title, ""))
 
-        for item_url, title in pairs:
+        for item_url, title, image_url in pairs:
             if item_url in seen:
                 continue
             if not is_usable_product_title(title):
@@ -286,6 +314,7 @@ def fetch_rakuten_ranking(
                     source="rakuten",
                     title=title[:120],
                     url=aff,
+                    image_url=image_url,
                     rank=len(items) + 1,
                     keyword=title[:40],
                     badge=_badge_for_title(title),
@@ -334,6 +363,14 @@ def fetch_amazon_bestsellers(
         title = title_match.group(1).strip() if title_match else f"Amazon商品 {asin}"
         if _is_ng_title(title):
             continue
+        img_match = re.search(
+            rf'data-asin="{asin}"[\s\S]{{0,1200}}?src="(https://[^"]+(?:images-amazon|media-amazon)[^"]+)"',
+            html_text,
+            re.I,
+        )
+        image_url = img_match.group(1).strip() if img_match else ""
+        if not _is_good_product_image(image_url):
+            image_url = ""
         try:
             product_url = amazon_product_url(asin)
         except RuntimeError:
@@ -344,6 +381,7 @@ def fetch_amazon_bestsellers(
                 source="amazon",
                 title=title,
                 url=product_url,
+                image_url=image_url,
                 rank=len(items) + 1,
                 keyword=title[:40],
                 badge=_badge_for_title(title),
@@ -477,7 +515,7 @@ def enrich_amazon_titles(
     session: requests.Session | None = None,
     limit: int = 10,
 ) -> list[ProductItem]:
-    """選定後のAmazon商品だけ productTitle / og:title でタイトルを補強。"""
+    """選定後のAmazon商品だけ productTitle / og:title / 画像を補強。"""
     sess = session or _session()
     out: list[ProductItem] = []
     for i, product in enumerate(products):
@@ -489,6 +527,7 @@ def enrich_amazon_titles(
             out.append(product)
             continue
         title = product.title
+        image_url = product.image_url
         try:
             html_text = sess.get(
                 f"https://www.amazon.co.jp/dp/{asin}",
@@ -509,8 +548,25 @@ def enrich_amazon_titles(
                 if len(cand) >= 8 and cand.lower() not in {"amazon", "amazon.co.jp"}:
                     title = cand[:120]
                     break
+            if not image_url:
+                for pat in (
+                    r'"hiRes"\s*:\s*"(https://m\.media-amazon\.com/images/I/[^"]+)"',
+                    r'"large"\s*:\s*"(https://m\.media-amazon\.com/images/I/[^"]+)"',
+                    r'data-old-hires="(https://[^"]+)"',
+                    r'<meta\s+property="og:image"\s+content="([^"]+)"',
+                    r'id="landingImage"[^>]+src="(https://[^"]+)"',
+                ):
+                    for m in re.finditer(pat, html_text, re.I):
+                        cand = html_unescape(m.group(1)).strip()
+                        if _is_good_product_image(cand):
+                            image_url = cand
+                            break
+                    if image_url:
+                        break
         except Exception as exc:  # noqa: BLE001
             logger.info("Amazonタイトル補強失敗 %s: %s", asin, exc)
+        if not _is_good_product_image(image_url):
+            image_url = ""
         out.append(
             ProductItem(
                 product_id=product.product_id,
@@ -518,7 +574,7 @@ def enrich_amazon_titles(
                 title=title,
                 url=product.url,
                 price=product.price,
-                image_url=product.image_url,
+                image_url=image_url,
                 rating=product.rating,
                 review_count=product.review_count,
                 rank=product.rank,

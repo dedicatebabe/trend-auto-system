@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.1.0
+# Version: 2.2.0
 # Date: 2026-09-16
-# Summary: 管理番号など読めない商品記事の掃除を追加
+# Summary: 商品画像表示と見出し付き本文レンダリングを追加
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -79,6 +79,7 @@ class ArticleEntry:
     badge: str = "NEWS"
     image_seed: int = 1
     links: dict[str, str] = field(default_factory=dict)
+    image_url: str = ""
 
 
 def article_id_from_link(link: str) -> str:
@@ -162,6 +163,7 @@ def load_entries() -> list[ArticleEntry]:
                 badge=badge,
                 image_seed=seed,
                 links={str(k): str(v) for k, v in (row.get("links") or {}).items()},
+                image_url=str(row.get("image_url", "") or "").strip(),
             )
         )
     return entries
@@ -183,6 +185,7 @@ def save_entries(entries: list[ArticleEntry]) -> None:
                 "badge": e.badge,
                 "image_seed": e.image_seed,
                 "links": e.links,
+                "image_url": e.image_url,
             }
             for e in entries
         ]
@@ -204,12 +207,86 @@ def _sanitize_public_copy(text: str) -> str:
     return out.strip()
 
 
-def _plain_to_paragraphs(text: str) -> str:
+def _excerpt_from_body(text: str, *, limit: int = 140) -> str:
     cleaned = _sanitize_public_copy(text)
-    chunks = [c.strip() for c in re.split(r"\n\s*\n", cleaned) if c.strip()]
-    if not chunks:
-        chunks = [cleaned] if cleaned else ["記事本文はありません。"]
-    return "\n".join(f"<p>{html.escape(c)}</p>" for c in chunks)
+    lines = []
+    for line in cleaned.splitlines():
+        s = line.strip()
+        if not s or s.startswith("##") or s.startswith("- "):
+            continue
+        lines.append(s)
+    blob = " ".join(lines) if lines else re.sub(r"\s+", " ", cleaned)
+    return blob.strip()[:limit]
+
+
+def _plain_to_paragraphs(text: str) -> str:
+    """プレーンテキストを見出し・箇条書き付きHTMLに変換。"""
+    cleaned = _sanitize_public_copy(text)
+    if not cleaned:
+        return "<p>記事本文はありません。</p>"
+
+    blocks = re.split(r"\n\s*\n", cleaned)
+    parts: list[str] = []
+    lead_done = False
+    for block in blocks:
+        lines = [ln.rstrip() for ln in block.splitlines() if ln.strip()]
+        if not lines:
+            continue
+
+        # 見出し単体ブロック
+        if len(lines) == 1 and lines[0].startswith("## "):
+            parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
+            continue
+
+        # 見出し＋続き
+        if lines[0].startswith("## "):
+            parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
+            lines = lines[1:]
+            if not lines:
+                continue
+
+        # 箇条書き
+        if all(ln.startswith(("- ", "・")) for ln in lines):
+            items = []
+            for ln in lines:
+                item = ln[2:].strip() if ln.startswith("- ") else ln[1:].strip()
+                items.append(f"<li>{html.escape(item)}</li>")
+            parts.append(f"<ul>{''.join(items)}</ul>")
+            continue
+
+        para = html.escape("\n".join(lines)).replace("\n", "<br>")
+        if not lead_done and not parts:
+            parts.append(f'<p class="lead">{para}</p>')
+            lead_done = True
+        else:
+            parts.append(f"<p>{para}</p>")
+
+    return "\n".join(parts) if parts else "<p>記事本文はありません。</p>"
+
+
+def _product_image_html(image_url: str, *, title: str) -> str:
+    url = (image_url or "").strip()
+    if not url.startswith(("http://", "https://")):
+        return ""
+    low = url.lower()
+    if any(
+        b in low
+        for b in (
+            "share-icons",
+            "amazon.png",
+            "spinner",
+            "grey-pixel",
+            "transparent-pixel",
+        )
+    ):
+        return ""
+    return (
+        f'<figure class="product-media">'
+        f'<img src="{html.escape(url, quote=True)}" '
+        f'alt="{html.escape(title)}" loading="lazy" decoding="async" '
+        f'referrerpolicy="no-referrer">'
+        f"</figure>"
+    )
 
 
 def _is_usable_source_url(url: str) -> bool:
@@ -286,8 +363,9 @@ def render_article_page(
     links: dict[str, str],
     canonical_url: str,
     badge: str | None = None,
+    image_url: str = "",
 ) -> str:
-    excerpt = re.sub(r"\s+", " ", body).strip()[:120]
+    excerpt = _excerpt_from_body(body)
     badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
     template = _load_template("article.html")
     return _apply(
@@ -296,8 +374,14 @@ def render_article_page(
             "PAGE_TITLE": html.escape(title),
             "META_DESCRIPTION": html.escape(excerpt),
             "CANONICAL_URL": html.escape(canonical_url),
+            "OG_IMAGE_TAG": (
+                f'<meta property="og:image" content="{html.escape(image_url, quote=True)}">'
+                if (image_url or "").startswith(("http://", "https://"))
+                else ""
+            ),
             "BADGE": html.escape(badge_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
+            "PRODUCT_IMAGE": _product_image_html(image_url, title=title),
             "ARTICLE_BODY": _plain_to_paragraphs(body),
             "SOURCE_LINK": _source_link_html(source_link),
             "PRODUCT_LINKS": _product_links_html(
@@ -356,8 +440,17 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
     badge = html.escape(entry.badge)
     badge_cls = _badge_class(entry.badge)
     href = html.escape(entry.filename)
+    media = ""
+    if (entry.image_url or "").startswith(("http://", "https://")):
+        media = (
+            f'<div class="card-media">'
+            f'<img src="{html.escape(entry.image_url, quote=True)}" '
+            f'alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">'
+            f"</div>"
+        )
     return (
         f'<a class="{cls}" href="{href}">'
+        f"{media}"
         f'<div class="card-body">'
         f'<span class="badge {badge_cls}">{badge}</span>'
         f"<{title_tag}>{title}</{title_tag}>"
@@ -411,6 +504,7 @@ def publish_article(
     created_at: str | None = None,
     badge: str | None = None,
     image_seed: int | None = None,
+    image_url: str = "",
 ) -> ArticleEntry:
     """個別記事を書き、entries と index を更新する。"""
     DOCS.mkdir(parents=True, exist_ok=True)
@@ -418,9 +512,10 @@ def publish_article(
     filename = article_filename(aid)
     stamp = created_at or datetime.now(timezone.utc).isoformat()
     body = _sanitize_public_copy(body)
-    excerpt = re.sub(r"\s+", " ", body).strip()[:140]
+    excerpt = _excerpt_from_body(body)
     badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
     seed = image_seed if image_seed is not None else _image_seed_from_id(aid)
+    image = (image_url or "").strip()
     entry = ArticleEntry(
         article_id=aid,
         filename=filename,
@@ -433,6 +528,7 @@ def publish_article(
         badge=badge_label,
         image_seed=seed,
         links=links or {},
+        image_url=image,
     )
 
     page = render_article_page(
@@ -444,6 +540,7 @@ def publish_article(
         links=entry.links,
         canonical_url=article_public_url(aid),
         badge=badge_label,
+        image_url=image,
     )
     (DOCS / filename).write_text(page, encoding="utf-8")
     logger.info("個別記事を出力: %s", filename)

@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 4.1.0
+# Version: 4.2.0
 # Date: 2026-09-16
-# Summary: 主商品直URL＋他店は商品名検索アフィを全記事に付与
+# Summary: 商品画像付きで記事公開するよう更新
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
@@ -234,6 +234,7 @@ def main() -> int:
                 keyword=str(analyzed["keyword"]) or product.keyword,
                 links=links,
                 badge=product.badge,
+                image_url=getattr(product, "image_url", "") or "",
             )
             article_url = article_public_url(entry.article_id)
             final_tweet = build_tweet(

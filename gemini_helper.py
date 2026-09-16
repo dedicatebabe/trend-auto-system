@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 3.1.0
+# Version: 3.2.0
 # Date: 2026-09-16
-# Summary: 管理番号・スラッグ商品名の記事化を禁止
+# Summary: 商品紹介をフック＋見出し構成の惹きつける文面に変更
 # ==========================================
 """Gemini API によるニュース／商品解析ヘルパー。"""
 
@@ -35,23 +35,36 @@ SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガ�
 出力は JSON のみ。
 """
 
-PRODUCT_SYSTEM_PROMPT = """あなたはアフィリエイト媒体の商品紹介ライターです。
-入力された商品情報だけを根拠に、読者が判断しやすい紹介文を書いてください。
+PRODUCT_SYSTEM_PROMPT = """あなたはアフィリエイト媒体の編集者兼コピーライターです。
+読者が「ちょっと見たい」と思う温度感で商品を紹介してください。
+カタログ説明・事務的な紹介文・テンプレ感のある文章は禁止。
 アダルト・性的・過激な内容は禁止。一般向けのみ。
-嘘のスペック、架空の口コミ、過度な煽りは禁止。
+嘘のスペック、架空の口コミ、過度な煽り（今すぐ買え等）は禁止。
 値段や在庫は変動しうる前提で書く。
 
 禁止:
 - 「管理番号」「商品番号」「品番」だけをタイトルや本文の主役にすること
 - 「フィギュア（楽天） 12345678」のようなスラッグ／IDだけの商品名をそのまま書くこと
-- 商品名が不明なのに推測で固有名を捏造すること（その場合は一般名＋ショップ名で簡潔に）
+- 「ご紹介です」「向いています」「チェックしてください」だけの薄い文
+- 商品名が不明なのに推測で固有名を捏造すること
 
 必須キー:
-- article_title: 日本語タイトル。実商品名を含めつつキャッチーに。40字前後
-- article_body: プレーンテキスト。220〜380字。
-  構成: 何の商品か / 向いている人 / 見るべきポイント / 注意点。
-  「今すぐ買え」系の強い煽りは禁止。
-- tweet_text: X投稿。100文字前後。商品名＋一言フック＋詳細誘導
+- article_title: 日本語タイトル。実商品名＋感情フック。32〜42字前後
+- article_body: プレーンテキストのみ。次の形式を厳守（見出し行は ## で始める）:
+
+1段落目（見出しなし）: フック。なぜ今これが気になるかを2〜4文で。事務説明禁止。
+
+## 刺さる人
+誰のどんな欲に刺さるか。1〜3文。
+
+## 見るべきところ
+商品ページで確認したい見どころを、箇条書き3点（各行は「- 」で始める）。
+
+## ひとこと注意
+在庫・価格・仕様の変動など、短く1〜2文。
+
+全体で280〜420字。テンプレ感を消し、編集部が推す口調にする。
+- tweet_text: X投稿。100文字前後。フック強め＋詳細誘導
 - keyword: 短い検索語（作品名・型番・一般名）。数字だけの管理番号は禁止
 
 出力は JSON のみ。
@@ -145,18 +158,23 @@ def _fallback_product_result(product: Any) -> dict[str, Any]:
     price = getattr(product, "price", None)
     source = str(getattr(product, "source", "") or "")
     shop = {"amazon": "Amazon", "rakuten": "楽天", "mercari": "メルカリ"}.get(source, "ショップ")
-    price_txt = f"{price:,}円前後" if isinstance(price, int) and price > 0 else "価格は商品ページで確認"
+    price_txt = f"{price:,}円前後" if isinstance(price, int) and price > 0 else "価格は商品ページで要確認"
     short = title[:40]
     body = (
-        f"「{title}」がいま注目されています。\n\n"
-        f"取り扱い: {shop}。参考価格の目安は {price_txt} です。"
-        "用途や付属品、状態（新品/中古）を商品ページで確認してから検討するのが安心です。"
-        "在庫と価格は変動しやすい点だけ覚えておくと失敗しにくいです。"
+        f"「{title}」がいま静かに、でも確実に目立っている。{shop}まわりで反応が集まっているので、気になる人は一度見た方が早い。\n\n"
+        f"## 刺さる人\n"
+        f"作品ファン、コレクションを増やしたい人、手触りや造形を重視する人。\n\n"
+        f"## 見るべきところ\n"
+        f"- 見た目・付属・サイズ感が自分のイメージと合うか\n"
+        f"- 参考価格の目安（{price_txt}）\n"
+        f"- 在庫と発送条件の最新情報\n\n"
+        f"## ひとこと注意\n"
+        f"価格と在庫は変わりやすい。判断は商品ページの最新表示で。"
     )
     return {
-        "article_title": f"{short}｜いまの売れ筋をチェック",
+        "article_title": f"{short}｜いま押さえておきたい1品",
         "article_body": body,
-        "tweet_text": f"【売れ筋】{short} 詳細はこちら",
+        "tweet_text": f"気になる人、見て。{short}",
         "keyword": short[:20],
     }
 
@@ -178,7 +196,8 @@ def analyze_product_with_gemini(
     model_id = (model_name or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)).strip()
     price = getattr(product, "price", None)
     user_prompt = (
-        "次の商品を紹介記事にしてください。\n\n"
+        "次の商品を、読者がつい見たくなる記事にしてください。\n"
+        "事務的な紹介ではなく、編集部が推す温度感で。\n\n"
         f"商品名: {getattr(product, 'title', '')}\n"
         f"ショップ: {getattr(product, 'source', '')}\n"
         f"価格: {price if price is not None else '不明'}\n"
@@ -193,7 +212,7 @@ def analyze_product_with_gemini(
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=PRODUCT_SYSTEM_PROMPT,
-                temperature=0.6,
+                temperature=0.75,
                 max_output_tokens=2048,
                 response_mime_type="application/json",
             ),
@@ -224,7 +243,7 @@ def analyze_news_with_gemini(
     model_name: str | None = None,
 ) -> dict[str, Any]:
     """
-    ニュースを Gemini で解析し dict を返す。
+    ニュース1件を解析する。
 
     キー: has_product_links, keyword, article_title, article_body, tweet_text
     """
@@ -235,18 +254,17 @@ def analyze_news_with_gemini(
     user_prompt = (
         "次のニュースを解析してください。\n\n"
         f"タイトル: {news.title}\n"
+        f"要約: {news.summary}\n"
         f"URL: {news.link}\n"
-        f"公開: {news.published}\n"
-        f"本文/要約:\n{news.summary[:3000]}"
+        f"公開日: {news.published}\n"
     )
-
     try:
         response = client.models.generate_content(
             model=model_id,
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                temperature=0.7,
+                temperature=0.5,
                 max_output_tokens=2048,
                 response_mime_type="application/json",
             ),
@@ -254,20 +272,18 @@ def analyze_news_with_gemini(
         raw_text = _extract_response_text(response)
         data = _extract_json_object(raw_text)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Gemini 解析に失敗したためフォールバックを使用: %s", exc)
+        logger.warning("Gemini生成失敗、フォールバック: %s", exc)
         return _fallback_result(news)
 
-    result: dict[str, Any] = {
-        "has_product_links": False,
+    result = {
+        "has_product_links": bool(data.get("has_product_links", False)),
         "keyword": str(data.get("keyword", "")).strip(),
         "article_title": str(data.get("article_title", "")).strip(),
-        "article_body": str(data.get("article_body", "")).strip(),
-        "tweet_text": str(data.get("tweet_text", "")).strip(),
+        "article_body": re.sub(r"<[^>]+>", "", str(data.get("article_body", ""))).strip(),
+        "tweet_text": str(data.get("tweet_text", "")).strip()[:140],
     }
     if not result["keyword"] or not result["article_title"] or not result["article_body"] or not result["tweet_text"]:
-        logger.warning("Gemini 応答に欠落キーがあるためフォールバックを使用")
         return _fallback_result(news)
-
-    result["article_body"] = re.sub(r"<[^>]+>", "", result["article_body"]).strip()
-    result["tweet_text"] = result["tweet_text"][:140]
+    # 話題パイプラインでは常に false に固定
+    result["has_product_links"] = False
     return result
