@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.1.0
+Version: 2.2.0
 Date: 2026-09-16
-Summary: カード型メディアUI・回遊向けレイアウトに刷新
+Summary: 写真なしグラデ表紙・空カテゴリ表示・トップニュース選定
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -48,7 +48,6 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
       letter-spacing: 0.01em;
     }
     a { color: inherit; text-decoration: none; }
-    img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
 
     .site-header {
@@ -88,7 +87,7 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
       position: relative;
       overflow: hidden;
       color: #fff;
-      padding: 3.2rem 0 2.8rem;
+      padding: 3.2rem 0 2.4rem;
       background:
         radial-gradient(circle at 85% 20%, rgba(255,255,255,0.14), transparent 38%),
         linear-gradient(125deg, #0a1628 0%, #12304f 48%, #1a4a6e 100%);
@@ -124,11 +123,58 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
       letter-spacing: -0.03em;
     }
     .hero p {
-      margin: 0;
+      margin: 0 0 1.4rem;
       max-width: 34em;
       color: rgba(255,255,255,0.8);
       font-size: 1rem;
       line-height: 1.8;
+    }
+
+    .cat-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .cat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.32rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    .cat-chip.is-active {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,255,255,0.28);
+      color: #fff;
+    }
+    .cat-chip.is-active:hover {
+      transform: translateY(-1px);
+      background: rgba(255,255,255,0.24);
+    }
+    .cat-chip.is-empty {
+      background: transparent;
+      border-color: rgba(255,255,255,0.18);
+      border-style: dashed;
+      color: rgba(255,255,255,0.48);
+      font-weight: 500;
+      cursor: default;
+    }
+    .cat-chip .cat-count {
+      font-family: "Outfit", sans-serif;
+      font-size: 0.72rem;
+      opacity: 0.85;
+    }
+    .cat-chip .cat-soon {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      opacity: 0.8;
     }
 
     .main { padding: 2.4rem 0 4rem; }
@@ -173,8 +219,58 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
     .card-thumb {
       position: relative;
       aspect-ratio: 16 / 10;
-      background: #dbe3ee;
       overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      padding: 1rem 1.1rem;
+      color: #fff;
+    }
+    .card-thumb::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .card-thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,0.35) 100%);
+      pointer-events: none;
+    }
+    .thumb-label {
+      position: relative;
+      z-index: 1;
+      font-family: "Outfit", "Noto Sans JP", sans-serif;
+      font-size: clamp(1.35rem, 3vw, 1.85rem);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    .thumb-news {
+      background: linear-gradient(145deg, #1a3a5c 0%, #2a5f8f 55%, #3d7ab0 100%);
+    }
+    .thumb-item {
+      background: linear-gradient(145deg, #0f4d3c 0%, #1a8a68 55%, #2bb58a 100%);
+    }
+    .thumb-anime {
+      background: linear-gradient(145deg, #3a2d6e 0%, #5b4fb0 55%, #8578d4 100%);
+    }
+    .thumb-game {
+      background: linear-gradient(145deg, #123a5c 0%, #1f6ea8 55%, #4a9ad0 100%);
+    }
+    .thumb-gadget {
+      background: linear-gradient(145deg, #2a3542 0%, #445466 55%, #6a7b90 100%);
+    }
+    .thumb-goods {
+      background: linear-gradient(145deg, #5c3a1e 0%, #9a6330 55%, #c48952 100%);
     }
     .card-body {
       display: flex;
@@ -225,6 +321,9 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
     }
     .card-featured .card-thumb { aspect-ratio: 21 / 10; }
     .card-featured .card-body { padding: 1.25rem 1.3rem 1.4rem; gap: 0.55rem; }
+    .card-featured .thumb-label {
+      font-size: clamp(1.7rem, 4vw, 2.4rem);
+    }
 
     .latest-grid {
       display: grid;
@@ -271,7 +370,7 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
     }
     @media (max-width: 680px) {
       .nav { display: none; }
-      .hero { padding: 2.4rem 0 2.1rem; }
+      .hero { padding: 2.4rem 0 2rem; }
       .latest-grid { grid-template-columns: 1fr; }
       .main { padding: 1.8rem 0 3.2rem; }
     }
@@ -282,6 +381,7 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
     <div class="wrap header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
       <nav class="nav" aria-label="主要ナビ">
+        <a href="#top-news">トップニュース</a>
         <a href="#latest">最新記事</a>
         <a href="affiliate.html">表記</a>
         <a href="privacy.html">プライバシー</a>
@@ -291,17 +391,20 @@ Summary: カード型メディアUI・回遊向けレイアウトに刷新
 
   <section class="hero">
     <div class="wrap">
-      <div class="hero-kicker">ANIME / GAME / GADGET / GOODS</div>
+      <div class="hero-kicker">TREND MEDIA</div>
       <h1>Trend Pick</h1>
       <p>いま話題のアニメ・ゲーム・ガジェット・グッズを、読みものとしてわかりやすくまとめるメディアです。</p>
+      <div class="cat-strip" aria-label="カテゴリ一覧">
+        {{CATEGORY_STRIP}}
+      </div>
     </div>
   </section>
 
   <main class="main wrap">
-    <div class="featured-wrap">
+    <div class="featured-wrap" id="top-news">
       <div class="section-head">
-        <p class="section-label">FEATURED</p>
-        <p class="section-note">今日の注目トピック</p>
+        <p class="section-label">TOP NEWS</p>
+        <p class="section-note">いま一番おすすめの1本</p>
       </div>
       {{FEATURED_BLOCK}}
     </div>

@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.1.1
+# Version: 1.2.0
 # Date: 2026-09-16
-# Summary: 読み物記事の買い物リンク無し断りを削除
+# Summary: グラデ表紙・空カテゴリchip・トップニュース選定
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -12,6 +12,7 @@ import html
 import json
 import logging
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +33,18 @@ BADGE_CLASS = {
     "ゲーム": "badge-game",
     "ガジェット": "badge-gadget",
 }
+
+# サイトが扱うカテゴリ（記事ゼロでも表示。空は「準備中」chip）
+SITE_CATEGORIES = (
+    "NEWS",
+    "アニメ",
+    "ゲーム",
+    "ガジェット",
+    "注目アイテム",
+    "トレンドグッズ",
+)
+
+FEATURE_PRIORITY_BADGES = frozenset({"注目アイテム", "トレンドグッズ"})
 
 
 @dataclass
@@ -79,8 +92,9 @@ def _image_seed_from_id(article_id: str) -> int:
     return (int(digest[:6], 16) % 90) + 1
 
 
-def _thumb_url(seed: int) -> str:
-    return f"https://picsum.photos/600/400?random={int(seed)}"
+def _thumb_class(badge: str) -> str:
+    """カテゴリに対応する写真なしグラデ表紙クラス。"""
+    return _badge_class(badge).replace("badge-", "thumb-", 1)
 
 
 def _load_template(name: str) -> str:
@@ -239,6 +253,46 @@ def _badge_class(badge: str) -> str:
     return BADGE_CLASS.get(badge, "badge-news")
 
 
+def _pick_featured(entries: list[ArticleEntry]) -> ArticleEntry:
+    """
+    トップニュース用に1本選ぶ。
+
+    注目アイテム／トレンドグッズ、または商品リンクありを優先し、
+    なければ日付の新しい記事を採用する。
+    """
+    preferred = [
+        e
+        for e in entries
+        if e.has_product_links or e.badge in FEATURE_PRIORITY_BADGES
+    ]
+    pool = preferred or list(entries)
+    return sorted(pool, key=lambda e: e.created_at, reverse=True)[0]
+
+
+def _render_category_strip(entries: list[ArticleEntry]) -> str:
+    """記事ありは件数付きchip、ゼロ件は破線の「準備中」chip。"""
+    counts = Counter(e.badge for e in entries)
+    chips: list[str] = []
+    for name in SITE_CATEGORIES:
+        count = counts.get(name, 0)
+        label = html.escape(name)
+        if count > 0:
+            chips.append(
+                f'<a class="cat-chip is-active" href="#latest">'
+                f"{label}"
+                f'<span class="cat-count">{count}</span>'
+                f"</a>"
+            )
+        else:
+            chips.append(
+                f'<span class="cat-chip is-empty" title="このカテゴリの記事はまだありません">'
+                f"{label}"
+                f'<span class="cat-soon">準備中</span>'
+                f"</span>"
+            )
+    return "".join(chips)
+
+
 def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
     cls = "card card-featured" if featured else "card"
     title_tag = "h2" if featured else "h3"
@@ -247,11 +301,13 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
     date = html.escape(entry.created_at[:10] if entry.created_at else "")
     badge = html.escape(entry.badge)
     badge_cls = _badge_class(entry.badge)
+    thumb_cls = _thumb_class(entry.badge)
     href = html.escape(entry.filename)
-    thumb = html.escape(_thumb_url(entry.image_seed), quote=True)
     return (
         f'<a class="{cls}" href="{href}">'
-        f'<div class="card-thumb"><img src="{thumb}" alt="" loading="lazy"></div>'
+        f'<div class="card-thumb {thumb_cls}">'
+        f'<span class="thumb-label">{badge}</span>'
+        f"</div>"
         f'<div class="card-body">'
         f'<span class="badge {badge_cls}">{badge}</span>'
         f"<{title_tag}>{title}</{title_tag}>"
@@ -264,9 +320,13 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
 def render_index_page(entries: list[ArticleEntry]) -> str:
     sorted_entries = sorted(entries, key=lambda e: e.created_at, reverse=True)
     template = _load_template("index.html")
+    category_strip = _render_category_strip(sorted_entries)
     if not sorted_entries:
         featured = (
             '<div class="card card-featured">'
+            '<div class="card-thumb thumb-news">'
+            '<span class="thumb-label">NEWS</span>'
+            "</div>"
             '<div class="card-body">'
             "<h2>まだ記事がありません</h2>"
             '<p class="card-excerpt">自動更新後に最新トピックが表示されます。</p>'
@@ -274,15 +334,18 @@ def render_index_page(entries: list[ArticleEntry]) -> str:
         )
         latest = '<p class="empty">追加の記事はまだありません。</p>'
     else:
-        top = sorted_entries[0]
+        top = _pick_featured(sorted_entries)
         featured = _render_card(top, featured=True)
-        rest = sorted_entries[1 : TOP_LIST_LIMIT + 1]
+        rest = [e for e in sorted_entries if e.article_id != top.article_id][
+            :TOP_LIST_LIMIT
+        ]
         latest = "\n".join(_render_card(e) for e in rest) or (
             '<p class="empty">追加の記事はまだありません。</p>'
         )
     return _apply(
         template,
         {
+            "CATEGORY_STRIP": category_strip,
             "FEATURED_BLOCK": featured,
             "LATEST_LIST": latest,
             "YEAR": str(datetime.now(timezone.utc).year),
