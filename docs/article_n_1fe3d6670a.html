@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.1.2
+Version: 2.2.0
 Date: 2026-09-16
-Summary: 断り文言除去に合わせて記事テンプレを再同期
+Summary: 関連リンクを控えめにし出典を本文直後へ
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -83,39 +83,6 @@ Summary: 断り文言除去に合わせて記事テンプレを再同期
     }
     .meta { margin: 0 0 1.1rem; color: var(--muted); font-size: 0.86rem; }
     .content p { margin: 0.7rem 0; }
-    .link-panel {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #f7fafc;
-    }
-    .link-label {
-      margin: 0 0 0.75rem;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.84rem;
-      font-weight: 700;
-    }
-    .btn-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.55rem;
-    }
-    .btn {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 44px;
-      padding: 0.55rem 0.7rem;
-      border-radius: 8px;
-      color: #fff !important;
-      font-size: 0.84rem;
-      font-weight: 700;
-      text-align: center;
-    }
-    .btn-amazon { background: var(--amazon); color: #111 !important; }
-    .btn-rakuten { background: var(--rakuten); }
-    .btn-mercari { background: var(--mercari); }
-    .btn-surugaya { background: var(--surugaya); }
     .source-link {
       display: inline-block;
       margin-top: 1.1rem;
@@ -123,6 +90,44 @@ Summary: 断り文言除去に合わせて記事テンプレを再同期
       font-weight: 700;
       border-bottom: 2px solid #9ec0e8;
     }
+    .link-panel {
+      margin-top: 1.35rem;
+      padding: 0.85rem 0.9rem;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fafbfc;
+    }
+    .link-label {
+      margin: 0 0 0.55rem;
+      text-align: left;
+      color: #8091a5;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .btn-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 0.35rem 0.7rem;
+      border-radius: 999px;
+      color: #fff !important;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
+      opacity: 0.92;
+    }
+    .btn:hover { opacity: 1; }
+    .btn-amazon { background: var(--amazon); color: #111 !important; }
+    .btn-rakuten { background: var(--rakuten); }
+    .btn-mercari { background: var(--mercari); }
+    .btn-surugaya { background: var(--surugaya); }
     .back {
       display: inline-block;
       margin-top: 1.2rem;
@@ -136,9 +141,6 @@ Summary: 断り文言除去に合わせて記事テンプレを再同期
     }
     .footer-inner { padding: 1.3rem 0; display: grid; gap: 0.2rem; }
     .footer-inner a { color: #cfe0f5; text-decoration: underline; }
-    @media (max-width: 640px) {
-      .btn-grid { grid-template-columns: 1fr; }
-    }
   </style>
 </head>
 <body>
@@ -158,15 +160,15 @@ Summary: 断り文言除去に合わせて記事テンプレを再同期
         <p>話題の原作が映像化されます。</p>
 <p>キャラクター設計と世界観のどこが魅力かを、短く整理しました。</p>
       </div>
-      
       <a class="source-link" href="https://example.com/demo/anime-spring" rel="noopener" target="_blank">元の発表・記事を見る</a>
+      
     </article>
     <a class="back" href="index.html">← トップへ戻る</a>
   </main>
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
-      <div>当ページはアフィリエイト広告を含む場合があります。アダルトコンテンツは扱いません。</div>
+      <div>一部の記事には関連リンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
       <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシー</a></div>
       <div>&copy; 2026 Trend Pick</div>
     </div>

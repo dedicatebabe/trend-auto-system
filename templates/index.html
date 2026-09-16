@@ -1,19 +1,19 @@
 <!-- ==========================================
-Version: 2.3.1
+Version: 2.4.0
 Date: 2026-09-16
-Summary: 画像撤去後のカード高さ・余白の間延びを解消
+Summary: トレンドトピック主軸の文言・構成に調整
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</title>
-  <meta name="description" content="アニメ、ゲーム、ガジェット、グッズの話題を読みやすくまとめるレビューメディア。">
+  <title>Trend Pick - いまの話題・トレンドトピック</title>
+  <meta name="description" content="アニメ、ゲーム、ガジェットなど、いま話題のトピックを読みやすくまとめるトレンドメディア。">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Trend Pick">
-  <meta property="og:title" content="Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー">
+  <meta property="og:title" content="Trend Pick - いまの話題・トレンドトピック">
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,7 +124,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     }
     .hero p {
       margin: 0 0 1.4rem;
-      max-width: 34em;
+      max-width: 36em;
       color: rgba(255,255,255,0.8);
       font-size: 1rem;
       line-height: 1.8;
@@ -232,11 +232,11 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
       line-height: 1.2;
     }
     .badge-news { background: #e8eef7; color: var(--accent); }
-    .badge-item { background: #e6f6f0; color: var(--mint); }
+    .badge-item { background: #eef2f6; color: #4a5d73; }
     .badge-anime { background: #ece8f8; color: #5b4fb0; }
     .badge-game { background: #e7f2fb; color: #1f6ea8; }
     .badge-gadget { background: #eef1f5; color: #445466; }
-    .badge-goods { background: #f7efe6; color: #9a6330; }
+    .badge-goods { background: #f2f0ed; color: #6b5e52; }
     .card h2, .card h3 {
       margin: 0;
       color: var(--navy);
@@ -322,7 +322,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     <div class="wrap header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
       <nav class="nav" aria-label="主要ナビ">
-        <a href="#top-news">トップニュース</a>
+        <a href="#topics">注目トピック</a>
         <a href="#latest">最新記事</a>
         <a href="affiliate.html">表記</a>
         <a href="privacy.html">プライバシー</a>
@@ -332,9 +332,9 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
 
   <section class="hero">
     <div class="wrap">
-      <div class="hero-kicker">TREND MEDIA</div>
+      <div class="hero-kicker">TREND TOPICS</div>
       <h1>Trend Pick</h1>
-      <p>いま話題のアニメ・ゲーム・ガジェット・グッズを、読みものとしてわかりやすくまとめるメディアです。</p>
+      <p>いま何が話題かを、短い記事で追うトレンドメディアです。アニメ・ゲーム・ガジェットなどのトピックを中心に、気になる話題だけをわかりやすくまとめます。</p>
       <div class="cat-strip" aria-label="カテゴリ一覧">
         {{CATEGORY_STRIP}}
       </div>
@@ -342,17 +342,17 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
   </section>
 
   <main class="main wrap">
-    <div class="featured-wrap" id="top-news">
+    <div class="featured-wrap" id="topics">
       <div class="section-head">
-        <p class="section-label">TOP NEWS</p>
-        <p class="section-note">いま一番おすすめの1本</p>
+        <p class="section-label">TODAY'S TOPIC</p>
+        <p class="section-note">いま押さえておきたい話題</p>
       </div>
       {{FEATURED_BLOCK}}
     </div>
 
     <div class="section-head" id="latest">
-      <p class="section-label">LATEST</p>
-      <p class="section-note">新着ピックアップ</p>
+      <p class="section-label">LATEST TOPICS</p>
+      <p class="section-note">新着の話題ピックアップ</p>
     </div>
     <div class="latest-grid">
       {{LATEST_LIST}}
@@ -363,7 +363,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     <div class="wrap footer-inner">
       <strong>Trend Pick</strong>
       <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシーポリシー</a></div>
-      <div class="footer-disc">一部の記事にはアフィリエイトリンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
+      <div class="footer-disc">一部の記事には関連リンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
       <div>&copy; {{YEAR}} Trend Pick</div>
     </div>
   </footer>

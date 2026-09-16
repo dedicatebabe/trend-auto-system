@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.2.3
+# Version: 1.3.0
 # Date: 2026-09-16
-# Summary: 読み物・買い物リンク無しの断り文言を本文からも除去
+# Summary: トレンドトピック主軸の見せ方に調整
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -27,24 +27,30 @@ TOP_LIST_LIMIT = 6
 
 BADGE_CLASS = {
     "NEWS": "badge-news",
-    "注目アイテム": "badge-item",
-    "トレンドグッズ": "badge-goods",
+    "注目トピック": "badge-item",
+    "カルチャー": "badge-goods",
     "アニメ": "badge-anime",
     "ゲーム": "badge-game",
     "ガジェット": "badge-gadget",
 }
 
-# サイトが扱うカテゴリ（記事ゼロでも表示。空は「準備中」chip）
+# 話題カテゴリを先に、関連トピック系は後ろに置く
 SITE_CATEGORIES = (
     "NEWS",
     "アニメ",
     "ゲーム",
     "ガジェット",
-    "注目アイテム",
-    "トレンドグッズ",
+    "注目トピック",
+    "カルチャー",
 )
 
-FEATURE_PRIORITY_BADGES = frozenset({"注目アイテム", "トレンドグッズ"})
+FEATURE_TOPIC_BADGES = frozenset({"NEWS", "アニメ", "ゲーム", "ガジェット", "カルチャー"})
+LEGACY_BADGE_MAP = {
+    "商品": "注目トピック",
+    "商品ピックアップ": "注目トピック",
+    "注目アイテム": "注目トピック",
+    "トレンドグッズ": "カルチャー",
+}
 
 # 記事本文・抜粋から除去する断り／メタ文言
 _DISCLAIMER_PATTERNS = (
@@ -92,10 +98,9 @@ def article_public_url(article_id: str, *, base: str = SITE_BASE) -> str:
 def _badge_for(*, has_product_links: bool, badge: str | None = None) -> str:
     if badge and badge.strip():
         raw = badge.strip()
-        if raw in ("商品", "商品ピックアップ"):
-            return "注目アイテム"
-        return raw
-    return "注目アイテム" if has_product_links else "NEWS"
+        return LEGACY_BADGE_MAP.get(raw, raw)
+    # 商品リンク有無だけでカテゴリを決めない（話題メディアの体裁を優先）
+    return "NEWS"
 
 
 def _image_seed_from_id(article_id: str) -> int:
@@ -211,10 +216,10 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
     if not has_product_links:
         return ""
     items = [
-        ("amazon", "Amazonで見る", "btn-amazon"),
-        ("rakuten", "楽天で見る", "btn-rakuten"),
-        ("mercari", "メルカリで相場を見る", "btn-mercari"),
-        ("surugaya", "駿河屋で探す", "btn-surugaya"),
+        ("amazon", "Amazon", "btn-amazon"),
+        ("rakuten", "楽天", "btn-rakuten"),
+        ("mercari", "メルカリ", "btn-mercari"),
+        ("surugaya", "駿河屋", "btn-surugaya"),
     ]
     buttons: list[str] = []
     for key, label, cls in items:
@@ -229,7 +234,7 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
         return ""
     return (
         '<div class="link-panel">'
-        '<p class="link-label">在庫・相場を比較する</p>'
+        '<p class="link-label">関連リンク（任意）</p>'
         f'<div class="btn-grid">{"".join(buttons)}</div>'
         "</div>"
     )
@@ -273,17 +278,15 @@ def _badge_class(badge: str) -> str:
 
 def _pick_featured(entries: list[ArticleEntry]) -> ArticleEntry:
     """
-    トップニュース用に1本選ぶ。
+    注目トピック用に1本選ぶ。
 
-    注目アイテム／トレンドグッズ、または商品リンクありを優先し、
-    なければ日付の新しい記事を採用する。
+    話題カテゴリ（NEWS／アニメ等）を優先し、商品寄り記事は後ろに回す。
     """
-    preferred = [
-        e
-        for e in entries
-        if e.has_product_links or e.badge in FEATURE_PRIORITY_BADGES
+    topic_first = [
+        e for e in entries if e.badge in FEATURE_TOPIC_BADGES and not e.has_product_links
     ]
-    pool = preferred or list(entries)
+    topic_any = [e for e in entries if e.badge in FEATURE_TOPIC_BADGES]
+    pool = topic_first or topic_any or list(entries)
     return sorted(pool, key=lambda e: e.created_at, reverse=True)[0]
 
 
@@ -464,7 +467,7 @@ def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
             "source_link": "https://example.com/demo/goods-acrylic",
             "title": "人気キャラのアクリルスタンド。探すときの状態チェック",
             "body": "公式グッズの中でも人気が高いアイテムです。\n\n傷の有無や箱あり・箱なしなど、見るべき点を整理しました。",
-            "badge": "トレンドグッズ",
+            "badge": "カルチャー",
             "keyword": "アクリルスタンド",
             "has_product_links": False,
             "image_seed": 44,

@@ -1,19 +1,19 @@
 <!-- ==========================================
-Version: 2.3.1
+Version: 2.4.0
 Date: 2026-09-16
-Summary: 画像撤去後のカード高さ・余白の間延びを解消
+Summary: トレンドトピック主軸の文言・構成に調整
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー</title>
-  <meta name="description" content="アニメ、ゲーム、ガジェット、グッズの話題を読みやすくまとめるレビューメディア。">
+  <title>Trend Pick - いまの話題・トレンドトピック</title>
+  <meta name="description" content="アニメ、ゲーム、ガジェットなど、いま話題のトピックを読みやすくまとめるトレンドメディア。">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Trend Pick">
-  <meta property="og:title" content="Trend Pick - 最新話題・アニメ・ゲーム・グッズレビュー">
+  <meta property="og:title" content="Trend Pick - いまの話題・トレンドトピック">
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,7 +124,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     }
     .hero p {
       margin: 0 0 1.4rem;
-      max-width: 34em;
+      max-width: 36em;
       color: rgba(255,255,255,0.8);
       font-size: 1rem;
       line-height: 1.8;
@@ -232,11 +232,11 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
       line-height: 1.2;
     }
     .badge-news { background: #e8eef7; color: var(--accent); }
-    .badge-item { background: #e6f6f0; color: var(--mint); }
+    .badge-item { background: #eef2f6; color: #4a5d73; }
     .badge-anime { background: #ece8f8; color: #5b4fb0; }
     .badge-game { background: #e7f2fb; color: #1f6ea8; }
     .badge-gadget { background: #eef1f5; color: #445466; }
-    .badge-goods { background: #f7efe6; color: #9a6330; }
+    .badge-goods { background: #f2f0ed; color: #6b5e52; }
     .card h2, .card h3 {
       margin: 0;
       color: var(--navy);
@@ -322,7 +322,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     <div class="wrap header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
       <nav class="nav" aria-label="主要ナビ">
-        <a href="#top-news">トップニュース</a>
+        <a href="#topics">注目トピック</a>
         <a href="#latest">最新記事</a>
         <a href="affiliate.html">表記</a>
         <a href="privacy.html">プライバシー</a>
@@ -332,35 +332,35 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
 
   <section class="hero">
     <div class="wrap">
-      <div class="hero-kicker">TREND MEDIA</div>
+      <div class="hero-kicker">TREND TOPICS</div>
       <h1>Trend Pick</h1>
-      <p>いま話題のアニメ・ゲーム・ガジェット・グッズを、読みものとしてわかりやすくまとめるメディアです。</p>
+      <p>いま何が話題かを、短い記事で追うトレンドメディアです。アニメ・ゲーム・ガジェットなどのトピックを中心に、気になる話題だけをわかりやすくまとめます。</p>
       <div class="cat-strip" aria-label="カテゴリ一覧">
-        <a class="cat-chip is-active" href="#latest">NEWS<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">アニメ<span class="cat-count">2</span></a><a class="cat-chip is-active" href="#latest">ゲーム<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">ガジェット<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">注目アイテム<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">トレンドグッズ<span class="cat-count">1</span></a>
+        <a class="cat-chip is-active" href="#latest">NEWS<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">アニメ<span class="cat-count">2</span></a><a class="cat-chip is-active" href="#latest">ゲーム<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">ガジェット<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">注目トピック<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">カルチャー<span class="cat-count">1</span></a>
       </div>
     </div>
   </section>
 
   <main class="main wrap">
-    <div class="featured-wrap" id="top-news">
+    <div class="featured-wrap" id="topics">
       <div class="section-head">
-        <p class="section-label">TOP NEWS</p>
-        <p class="section-note">いま一番おすすめの1本</p>
+        <p class="section-label">TODAY'S TOPIC</p>
+        <p class="section-note">いま押さえておきたい話題</p>
       </div>
-      <a class="card card-featured" href="article_n_7eeefa717c.html"><div class="card-body"><span class="badge badge-item">注目アイテム</span><h2>フリューくじ 刀剣乱舞ONLINE が登場。買う前に確認したいポイント</h2><p class="card-excerpt">話題のくじ情報を整理しました。 欲しい景品がある人は、公式情報と各ショップの在庫・価格を見比べるのが安心です。</p><span class="card-date">2026-09-16</span></div></a>
+      <a class="card card-featured" href="article_n_a178fbb46f.html"><div class="card-body"><span class="badge badge-news">NEWS</span><h2>業界コラムが話題。まずは元記事で内容を確認しよう</h2><p class="card-excerpt">業界の最新コラムが注目を集めています。 論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。</p><span class="card-date">2026-09-16</span></div></a>
     </div>
 
     <div class="section-head" id="latest">
-      <p class="section-label">LATEST</p>
-      <p class="section-note">新着ピックアップ</p>
+      <p class="section-label">LATEST TOPICS</p>
+      <p class="section-note">新着の話題ピックアップ</p>
     </div>
     <div class="latest-grid">
-      <a class="card" href="article_n_a178fbb46f.html"><div class="card-body"><span class="badge badge-news">NEWS</span><h3>業界コラムが話題。まずは元記事で内容を確認しよう</h3><p class="card-excerpt">業界の最新コラムが注目を集めています。 論点の整理や背景の押さえ方など、気になるポイントは元記事で確認するのがおすすめです。</p><span class="card-date">2026-09-16</span></div></a>
+      <a class="card" href="article_n_7eeefa717c.html"><div class="card-body"><span class="badge badge-item">注目トピック</span><h3>フリューくじ 刀剣乱舞ONLINE が話題。押さえておきたいポイント</h3><p class="card-excerpt">刀剣乱舞ONLINE のフリューくじが話題になっています。 景品ラインナップや展開のポイントを短く整理しました。気になる人は公式情報もあわせて確認を。</p><span class="card-date">2026-09-16</span></div></a>
 <a class="card" href="article_n_1fe3d6670a.html"><div class="card-body"><span class="badge badge-anime">アニメ</span><h3>今期注目のアニメ化作品。放送前に押さえておきたい見どころ</h3><p class="card-excerpt">話題の原作が映像化されます。 キャラクター設計と世界観のどこが魅力かを、短く整理しました。</p><span class="card-date">2026-09-15</span></div></a>
 <a class="card" href="article_n_93bf959dc4.html"><div class="card-body"><span class="badge badge-game">ゲーム</span><h3>スイッチ向け新作が話題。プレイ前に確認したい3つのポイント</h3><p class="card-excerpt">新作タイトルの情報が広がっています。 難易度、プレイ時間、周辺グッズの有無など、始める前に見たい点をまとめました。</p><span class="card-date">2026-09-14</span></div></a>
 <a class="card" href="article_n_4a49fb56a0.html"><div class="card-body"><span class="badge badge-gadget">ガジェット</span><h3>軽量ワイヤレスイヤホンの選び方。通勤・学習向けチェックリスト</h3><p class="card-excerpt">装着感、バッテリー、ノイズキャンセリング。 失敗しにくい比較観点をわかりやすく紹介します。</p><span class="card-date">2026-09-13</span></div></a>
-<a class="card" href="article_n_57286dd9b5.html"><div class="card-body"><span class="badge badge-goods">トレンドグッズ</span><h3>人気キャラのアクリルスタンド。探すときの状態チェック</h3><p class="card-excerpt">公式グッズの中でも人気が高いアイテムです。 傷の有無や箱あり・箱なしなど、見るべき点を整理しました。</p><span class="card-date">2026-09-12</span></div></a>
-<a class="card" href="article_n_a582f67ab6.html"><div class="card-body"><span class="badge badge-anime">アニメ</span><h3>完結アニメのBlu-ray。揃える前に見るべきスペック</h3><p class="card-excerpt">収録話数、特典、音声仕様。 購入前に確認したいポイントをコンパクトにまとめました。</p><span class="card-date">2026-09-11</span></div></a>
+<a class="card" href="article_n_57286dd9b5.html"><div class="card-body"><span class="badge badge-goods">カルチャー</span><h3>人気キャラのアクリルスタンドが話題。見るときのチェック点</h3><p class="card-excerpt">公式グッズの中でも人気が高いアイテムです。 傷の有無や箱あり・箱なしなど、見るべき点を整理しました。</p><span class="card-date">2026-09-12</span></div></a>
+<a class="card" href="article_n_a582f67ab6.html"><div class="card-body"><span class="badge badge-anime">アニメ</span><h3>完結アニメのBlu-rayが話題。揃える前に知りたいスペック</h3><p class="card-excerpt">収録話数、特典、音声仕様。 購入前に確認したいポイントをコンパクトにまとめました。</p><span class="card-date">2026-09-11</span></div></a>
     </div>
   </main>
 
@@ -368,7 +368,7 @@ Summary: 画像撤去後のカード高さ・余白の間延びを解消
     <div class="wrap footer-inner">
       <strong>Trend Pick</strong>
       <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシーポリシー</a></div>
-      <div class="footer-disc">一部の記事にはアフィリエイトリンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
+      <div class="footer-disc">一部の記事には関連リンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
       <div>&copy; 2026 Trend Pick</div>
     </div>
   </footer>
