@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 3.2.0
-# Date: 2026-09-16
-# Summary: 商品紹介をフック＋見出し構成の惹きつける文面に変更
+# Version: 3.3.0
+# Date: 2026-09-17
+# Summary: タイトル・本文を煽りAI口調から記事調に変更
 # ==========================================
 """Gemini API によるニュース／商品解析ヘルパー。"""
 
@@ -27,48 +27,89 @@ SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガ�
 必須キー:
 - has_product_links: 常に false（このパイプラインでは商品ページ直リンクを扱わない）
 - keyword: 話題の短い語（作品名・イベント名・固有名詞）
-- article_title: Web記事用のキャッチーな日本語タイトル。買う／購入／相場などの販売色は出さない
+- article_title: Web記事用の落ち着いた日本語タイトル。買う／購入／相場などの販売色は出さない
 - article_body: 見どころ文章。プレーンテキストのみ（HTML禁止）。200〜400字。
   話題の背景とポイントを中心に書く。購入誘導やメタ説明は禁止。
-- tweet_text: X投稿。フック＋詳細誘導。100文字前後
+- tweet_text: X投稿。事実ベースの誘導。100文字前後
 
 出力は JSON のみ。
 """
 
-PRODUCT_SYSTEM_PROMPT = """あなたはアフィリエイト媒体の編集者兼コピーライターです。
-読者が「ちょっと見たい」と思う温度感で商品を紹介してください。
-カタログ説明・事務的な紹介文・テンプレ感のある文章は禁止。
+PRODUCT_SYSTEM_PROMPT = """あなたはアニメ・ゲーム・ホビー系のウェブメディア編集者です。
+商品紹介を書きますが、広告コピーやSNS煽りではなく「普通の記事」として書いてください。
 アダルト・性的・過激な内容は禁止。一般向けのみ。
-嘘のスペック、架空の口コミ、過度な煽り（今すぐ買え等）は禁止。
-値段や在庫は変動しうる前提で書く。
+嘘のスペック、架空の口コミは禁止。値段や在庫は変動しうる前提で書く。
 
-禁止:
-- 「管理番号」「商品番号」「品番」だけをタイトルや本文の主役にすること
-- 「フィギュア（楽天） 12345678」のようなスラッグ／IDだけの商品名をそのまま書くこと
-- 「ご紹介です」「向いています」「チェックしてください」だけの薄い文
-- 商品名が不明なのに推測で固有名を捏造すること
+タイトルのルール（重要）:
+- 日本のウェブ記事らしい落ち着いた見出し
+- 商品名や作品名を自然に入れる
+- 禁止: すぎる / やばい / 最高 / 胸熱 / 一目惚れ / 止まらない / グッとくる / 待望の / 絶対に / 激アツ / ！の連打
+- 「感情フック＋商品名！」のAI定型は禁止
+- 良い例: 「『葬送のフリーレン』フリーレンの1/7フィギュア、再販分をチェック」
+- 良い例: 「ベイブレードX BX-56 ストリングランチャーLの仕様を整理」
+- 良い例: 「ONE PIECEカードゲーム『神の支配』BOX、気になる点まとめ」
+- 28〜40字前後
 
-必須キー:
-- article_title: 日本語タイトル。実商品名＋感情フック。32〜42字前後
-- article_body: プレーンテキストのみ。次の形式を厳守（見出し行は ## で始める）:
+本文のルール:
+- 読み物として自然な日本語。宣伝口調・テンプレ感は禁止
+- 「ご紹介です」「向いています」「チェックしてください」だけの薄い文は禁止
+- 「管理番号」「商品番号」やスラッグ名だけの紹介は禁止
+- 次の形式のプレーンテキスト（見出しは ## ）:
 
-1段落目（見出しなし）: フック。なぜ今これが気になるかを2〜4文で。事務説明禁止。
+1段落目（見出しなし）: 導入。何の商品か、いま話題になっている理由を2〜4文で淡々と。
 
-## 刺さる人
-誰のどんな欲に刺さるか。1〜3文。
+## 見どころ
+箇条書き3点（各行は「- 」で始める）。事実ベースで短く。
 
-## 見るべきところ
-商品ページで確認したい見どころを、箇条書き3点（各行は「- 」で始める）。
+## 向いている人
+誰向けかを1〜2文。押し売りしない。
 
-## ひとこと注意
+## 購入前の確認
 在庫・価格・仕様の変動など、短く1〜2文。
 
-全体で280〜420字。テンプレ感を消し、編集部が推す口調にする。
-- tweet_text: X投稿。100文字前後。フック強め＋詳細誘導
-- keyword: 短い検索語（作品名・型番・一般名）。数字だけの管理番号は禁止
+全体で260〜400字。編集者が普通に書く記事の温度感。
+
+必須キー:
+- article_title
+- article_body
+- tweet_text: X投稿。80〜110字。煽らず、記事への誘導がある一文
+- keyword: 短い検索語（作品名・型番・一般名）
 
 出力は JSON のみ。
 """
+
+_AI_TITLE_NG = (
+    "すぎる",
+    "やばい",
+    "最高",
+    "胸熱",
+    "一目惚れ",
+    "止まらない",
+    "グッとくる",
+    "待望の",
+    "絶対に",
+    "神すぎ",
+    "激アツ",
+    "悶絶",
+    "押しすぎ",
+)
+
+
+def _title_looks_ai(title: str) -> bool:
+    """煽り・AI定型タイトルか。"""
+    text = (title or "").strip()
+    if not text:
+        return True
+    if text.count("！") + text.count("!") >= 2:
+        return True
+    if any(ng in text for ng in _AI_TITLE_NG):
+        return True
+    # 「感情！商品名」の定型（前半で感嘆符）
+    if "！" in text:
+        idx = text.index("！")
+        if idx <= 16 and len(text) > 20:
+            return True
+    return False
 
 
 def _create_client(api_key: str | None = None) -> Any:
@@ -141,13 +182,12 @@ def _fallback_result(news: NewsItem) -> dict[str, Any]:
     else:
         body += "まずは元の発表内容を確認するのがおすすめです。"
     tweet = (
-        "これ気になる人多そう。\n"
-        f"「{short_title}」のポイントをサクッとまとめました。詳細はこちら↓"
+        f"「{short_title}」のポイントをまとめました。詳細はこちら。"
     )
     return {
         "has_product_links": has_links,
         "keyword": keyword,
-        "article_title": f"【話題】{short_title}",
+        "article_title": short_title,
         "article_body": body,
         "tweet_text": tweet[:120],
     }
@@ -159,22 +199,22 @@ def _fallback_product_result(product: Any) -> dict[str, Any]:
     source = str(getattr(product, "source", "") or "")
     shop = {"amazon": "Amazon", "rakuten": "楽天", "mercari": "メルカリ"}.get(source, "ショップ")
     price_txt = f"{price:,}円前後" if isinstance(price, int) and price > 0 else "価格は商品ページで要確認"
-    short = title[:40]
+    short = title[:36]
     body = (
-        f"「{title}」がいま静かに、でも確実に目立っている。{shop}まわりで反応が集まっているので、気になる人は一度見た方が早い。\n\n"
-        f"## 刺さる人\n"
-        f"作品ファン、コレクションを増やしたい人、手触りや造形を重視する人。\n\n"
-        f"## 見るべきところ\n"
+        f"「{title}」が{shop}で扱われている。気になる人向けに、見どころだけ短く整理する。\n\n"
+        f"## 見どころ\n"
         f"- 見た目・付属・サイズ感が自分のイメージと合うか\n"
         f"- 参考価格の目安（{price_txt}）\n"
         f"- 在庫と発送条件の最新情報\n\n"
-        f"## ひとこと注意\n"
+        f"## 向いている人\n"
+        f"作品ファンや、同系統のコレクションを増やしたい人。\n\n"
+        f"## 購入前の確認\n"
         f"価格と在庫は変わりやすい。判断は商品ページの最新表示で。"
     )
     return {
-        "article_title": f"{short}｜いま押さえておきたい1品",
+        "article_title": f"{short}の見どころを整理",
         "article_body": body,
-        "tweet_text": f"気になる人、見て。{short}",
+        "tweet_text": f"{short}のポイントをまとめました。",
         "keyword": short[:20],
     }
 
@@ -196,8 +236,8 @@ def analyze_product_with_gemini(
     model_id = (model_name or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)).strip()
     price = getattr(product, "price", None)
     user_prompt = (
-        "次の商品を、読者がつい見たくなる記事にしてください。\n"
-        "事務的な紹介ではなく、編集部が推す温度感で。\n\n"
+        "次の商品を、普通のウェブ記事として書いてください。\n"
+        "煽り・宣伝コピー・AIっぽい感嘆表現は使わないでください。\n\n"
         f"商品名: {getattr(product, 'title', '')}\n"
         f"ショップ: {getattr(product, 'source', '')}\n"
         f"価格: {price if price is not None else '不明'}\n"
@@ -212,7 +252,7 @@ def analyze_product_with_gemini(
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=PRODUCT_SYSTEM_PROMPT,
-                temperature=0.75,
+                temperature=0.45,
                 max_output_tokens=2048,
                 response_mime_type="application/json",
             ),
@@ -231,6 +271,13 @@ def analyze_product_with_gemini(
     }
     if not result["article_title"] or not result["article_body"] or not result["tweet_text"]:
         return _fallback_product_result(product)
+    if _title_looks_ai(result["article_title"]):
+        logger.info("AIっぽいタイトルのためフォールバック: %s", result["article_title"][:40])
+        fb = _fallback_product_result(product)
+        # 本文はGeminiのものを活かし、タイトルだけ記事調に寄せる
+        result["article_title"] = fb["article_title"]
+        if _title_looks_ai(result["tweet_text"]):
+            result["tweet_text"] = fb["tweet_text"]
     if not result["keyword"]:
         result["keyword"] = str(getattr(product, "title", ""))[:20]
     return result
@@ -264,7 +311,7 @@ def analyze_news_with_gemini(
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                temperature=0.5,
+                temperature=0.4,
                 max_output_tokens=2048,
                 response_mime_type="application/json",
             ),
@@ -284,6 +331,5 @@ def analyze_news_with_gemini(
     }
     if not result["keyword"] or not result["article_title"] or not result["article_body"] or not result["tweet_text"]:
         return _fallback_result(news)
-    # 話題パイプラインでは常に false に固定
     result["has_product_links"] = False
     return result
