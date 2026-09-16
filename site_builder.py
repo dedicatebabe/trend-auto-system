@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.2.0
-# Date: 2026-09-16
-# Summary: 商品画像表示と見出し付き本文レンダリングを追加
+# Version: 2.3.0
+# Date: 2026-09-17
+# Summary: ショップリンクを店名テキストボタンに変更
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -331,26 +331,30 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
     if not has_product_links:
         return ""
     items = [
-        ("amazon", "Amazon", "A", "btn-amazon"),
-        ("rakuten", "楽天", "楽", "btn-rakuten"),
-        ("mercari", "メルカリ", "M", "btn-mercari"),
-        ("surugaya", "駿河屋", "駿", "btn-surugaya"),
+        ("amazon", "Amazon", "btn-amazon"),
+        ("rakuten", "楽天市場", "btn-rakuten"),
+        ("mercari", "メルカリ", "btn-mercari"),
+        ("surugaya", "駿河屋", "btn-surugaya"),
     ]
     buttons: list[str] = []
-    for key, label, mark, cls in items:
+    for key, label, cls in items:
         url = links.get(key, "").strip()
         if not url:
             continue
         buttons.append(
-            f'<a class="shop-icon {cls}" href="{html.escape(url, quote=True)}" '
-            f'rel="nofollow sponsored noopener" target="_blank" '
-            f'title="{html.escape(label)}" aria-label="{html.escape(label)}">'
-            f'<span aria-hidden="true">{html.escape(mark)}</span>'
+            f'<a class="shop-btn {cls}" href="{html.escape(url, quote=True)}" '
+            f'rel="nofollow sponsored noopener" target="_blank">'
+            f"{html.escape(label)}"
             f"</a>"
         )
     if not buttons:
         return ""
-    return f'<div class="shop-icons" aria-label="関連ショップ">{"".join(buttons)}</div>'
+    return (
+        '<div class="shop-links">'
+        '<p class="shop-links-label">各ショップで見る</p>'
+        f'<div class="shop-btns">{"".join(buttons)}</div>'
+        "</div>"
+    )
 
 
 def render_article_page(
