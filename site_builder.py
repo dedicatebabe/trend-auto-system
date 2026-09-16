@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.4.0
+# Version: 1.3.0
 # Date: 2026-09-16
-# Summary: 記事下に同シリーズ・関連トピックを売れやすさ順で表示
+# Summary: トレンドトピック主軸の見せ方に調整
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -24,7 +24,6 @@ TEMPLATES = Path("templates")
 ENTRIES_FILE = DOCS / ".index_entries.json"
 SITE_BASE = "https://dedicatebabe.github.io/trend-auto-system"
 TOP_LIST_LIMIT = 6
-RELATED_LIMIT = 4
 
 BADGE_CLASS = {
     "NEWS": "badge-news",
@@ -64,35 +63,6 @@ _DISCLAIMER_PATTERNS = (
     re.compile(r"商品そのものではなく、読み物としての発表です[。．]?"),
 )
 
-_TOKEN_SPLIT = re.compile(r"[\s　、。・/／|｜\-−_（）()【】\[\]「」『』]+")
-_STOP_TOKENS = frozenset(
-    {
-        "の",
-        "を",
-        "に",
-        "は",
-        "が",
-        "と",
-        "で",
-        "も",
-        "へ",
-        "より",
-        "など",
-        "について",
-        "まとめ",
-        "話題",
-        "注目",
-        "最新",
-        "紹介",
-        "ポイント",
-        "チェック",
-        "おすすめ",
-        "関連",
-        "公式",
-        "情報",
-    }
-)
-
 
 @dataclass
 class ArticleEntry:
@@ -109,7 +79,6 @@ class ArticleEntry:
     badge: str = "NEWS"
     image_seed: int = 1
     links: dict[str, str] = field(default_factory=dict)
-    body: str = ""
 
 
 def article_id_from_link(link: str) -> str:
@@ -193,7 +162,6 @@ def load_entries() -> list[ArticleEntry]:
                 badge=badge,
                 image_seed=seed,
                 links={str(k): str(v) for k, v in (row.get("links") or {}).items()},
-                body=str(row.get("body", "") or ""),
             )
         )
     return entries
@@ -215,7 +183,6 @@ def save_entries(entries: list[ArticleEntry]) -> None:
                 "badge": e.badge,
                 "image_seed": e.image_seed,
                 "links": e.links,
-                "body": e.body,
             }
             for e in entries
         ]
@@ -273,103 +240,6 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
     )
 
 
-def _tokenize(text: str) -> set[str]:
-    tokens: set[str] = set()
-    for raw in _TOKEN_SPLIT.split(text or ""):
-        token = raw.strip().lower()
-        if len(token) < 2 or token in _STOP_TOKENS:
-            continue
-        tokens.add(token)
-    return tokens
-
-
-def _entry_tokens(entry: ArticleEntry) -> set[str]:
-    return _tokenize(f"{entry.keyword} {entry.title} {entry.badge}")
-
-
-def _related_score(base: ArticleEntry, other: ArticleEntry) -> float:
-    """同じシリーズ／キーワード優先＋売れやすさ（関連リンク・新しさ）で加点。"""
-    base_tokens = _entry_tokens(base)
-    other_tokens = _entry_tokens(other)
-    overlap = len(base_tokens & other_tokens)
-    same_badge = 1.0 if base.badge and base.badge == other.badge else 0.0
-    shop_bonus = 3.0 if other.has_product_links else 0.0
-    shop_bonus += min(2.0, 0.5 * len(other.links or {}))
-    try:
-        ts = datetime.fromisoformat(other.created_at.replace("Z", "+00:00")).timestamp()
-    except ValueError:
-        ts = 0.0
-    freshness = ts / 1_000_000_000_000.0
-    return overlap * 4.0 + same_badge * 1.2 + shop_bonus + freshness
-
-
-def find_related_entries(
-    current: ArticleEntry,
-    entries: list[ArticleEntry],
-    *,
-    limit: int = RELATED_LIMIT,
-) -> list[ArticleEntry]:
-    """同シリーズ・近い話題の記事を、反応しやすそうな順で返す。"""
-    scored: list[tuple[float, ArticleEntry]] = []
-    for other in entries:
-        if other.article_id == current.article_id:
-            continue
-        score = _related_score(current, other)
-        if score < 1.2:
-            continue
-        scored.append((score, other))
-    scored.sort(key=lambda item: item[0], reverse=True)
-    return [item[1] for item in scored[:limit]]
-
-
-def _related_block_html(related: list[ArticleEntry]) -> str:
-    if not related:
-        return ""
-    items: list[str] = []
-    for entry in related:
-        badge = html.escape(entry.badge)
-        badge_cls = _badge_class(entry.badge)
-        title = html.escape(entry.title)
-        href = html.escape(entry.filename)
-        note = "関連あり" if entry.has_product_links else "トピック"
-        items.append(
-            f'<a class="related-item" href="{href}">'
-            f'<span class="badge {badge_cls}">{badge}</span>'
-            f'<span class="related-title">{title}</span>'
-            f'<span class="related-note">{note}</span>'
-            f"</a>"
-        )
-    return (
-        '<section class="related" aria-label="関連トピック">'
-        "<h2>関連トピック</h2>"
-        '<p class="related-lead">同じシリーズや近い話題を、反応しやすい順にまとめました。</p>'
-        f'<div class="related-list">{"".join(items)}</div>'
-        "</section>"
-    )
-
-
-def _extract_body_from_article_html(path: Path) -> str:
-    if not path.exists():
-        return ""
-    text = path.read_text(encoding="utf-8")
-    match = re.search(r'<div class="content">(.*?)</div>', text, re.S)
-    if not match:
-        return ""
-    parts: list[str] = []
-    for para in re.findall(r"<p>(.*?)</p>", match.group(1), re.S):
-        plain = re.sub(r"<[^>]+>", "", para)
-        plain = (
-            plain.replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", '"')
-        )
-        plain = plain.strip()
-        if plain:
-            parts.append(plain)
-    return "\n\n".join(parts)
-
-
 def render_article_page(
     *,
     title: str,
@@ -380,7 +250,6 @@ def render_article_page(
     links: dict[str, str],
     canonical_url: str,
     badge: str | None = None,
-    related_html: str = "",
 ) -> str:
     excerpt = re.sub(r"\s+", " ", body).strip()[:120]
     badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
@@ -398,51 +267,9 @@ def render_article_page(
             "PRODUCT_LINKS": _product_links_html(
                 links, has_product_links=has_product_links
             ),
-            "RELATED_BLOCK": related_html,
             "YEAR": str(datetime.now(timezone.utc).year),
         },
     )
-
-
-def rewrite_all_article_pages(entries: list[ArticleEntry] | None = None) -> list[ArticleEntry]:
-    """全記事を再描画し、関連トピック枠を最新化する。"""
-    current = entries if entries is not None else load_entries()
-    refreshed: list[ArticleEntry] = []
-    for entry in current:
-        body = entry.body.strip() or _extract_body_from_article_html(DOCS / entry.filename)
-        body = _sanitize_public_copy(body) or entry.excerpt
-        related = find_related_entries(entry, current)
-        page = render_article_page(
-            title=entry.title,
-            body=body,
-            source_link=entry.source_link,
-            created_at=entry.created_at,
-            has_product_links=entry.has_product_links,
-            links=entry.links,
-            canonical_url=article_public_url(entry.article_id),
-            badge=entry.badge,
-            related_html=_related_block_html(related),
-        )
-        (DOCS / entry.filename).write_text(page, encoding="utf-8")
-        refreshed.append(
-            ArticleEntry(
-                article_id=entry.article_id,
-                filename=entry.filename,
-                title=entry.title,
-                excerpt=re.sub(r"\s+", " ", body).strip()[:140] or entry.excerpt,
-                source_link=entry.source_link,
-                created_at=entry.created_at,
-                has_product_links=entry.has_product_links,
-                keyword=entry.keyword,
-                badge=entry.badge,
-                image_seed=entry.image_seed,
-                links=entry.links,
-                body=body,
-            )
-        )
-    save_entries(refreshed)
-    (DOCS / "index.html").write_text(render_index_page(refreshed), encoding="utf-8")
-    return refreshed
 
 
 def _badge_class(badge: str) -> str:
@@ -552,7 +379,7 @@ def publish_article(
     badge: str | None = None,
     image_seed: int | None = None,
 ) -> ArticleEntry:
-    """個別記事を書き、entries と index・関連枠を更新する。"""
+    """個別記事を書き、entries と index を更新する。"""
     DOCS.mkdir(parents=True, exist_ok=True)
     aid = article_id_from_link(source_link)
     filename = article_filename(aid)
@@ -573,20 +400,29 @@ def publish_article(
         badge=badge_label,
         image_seed=seed,
         links=links or {},
-        body=body,
     )
+
+    page = render_article_page(
+        title=title,
+        body=body,
+        source_link=source_link,
+        created_at=stamp,
+        has_product_links=has_product_links,
+        links=entry.links,
+        canonical_url=article_public_url(aid),
+        badge=badge_label,
+    )
+    (DOCS / filename).write_text(page, encoding="utf-8")
+    logger.info("個別記事を出力: %s", filename)
 
     entries = [e for e in load_entries() if e.article_id != aid]
     entries.append(entry)
     entries = sorted(entries, key=lambda e: e.created_at, reverse=True)[:80]
     save_entries(entries)
 
-    refreshed = rewrite_all_article_pages(entries)
-    for item in refreshed:
-        if item.article_id == aid:
-            entry = item
-            break
-    logger.info("個別記事を出力: %s（関連枠更新含む）", filename)
+    index_html = render_index_page(entries)
+    (DOCS / "index.html").write_text(index_html, encoding="utf-8")
+    logger.info("index.html を再生成（件数=%s）", len(entries))
     return entry
 
 
@@ -597,26 +433,6 @@ def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
     既存エントリが min_total 未満なら不足分を追加し、index を再生成する。
     """
     demos = [
-        {
-            "source_link": "https://example.com/demo/touken-figure",
-            "title": "刀剣乱舞のフィギュア話題まとめ。シリーズで見るときの視点",
-            "body": "刀剣乱舞ONLINE 関連のフィギュアが改めて注目されています。\n\nキャラ選定やシリーズ横断で押さえておきたい点を短く整理しました。",
-            "badge": "カルチャー",
-            "keyword": "刀剣乱舞 フィギュア",
-            "has_product_links": True,
-            "image_seed": 61,
-            "created_at": "2026-09-10T10:00:00+00:00",
-        },
-        {
-            "source_link": "https://example.com/demo/touken-goods",
-            "title": "刀剣乱舞の周辺グッズが話題。まず見るべきカテゴリ",
-            "body": "刀剣乱舞関連のグッズ展開が広がっています。\n\nアクスタや文具など、話題になりやすいカテゴリをざっくり紹介します。",
-            "badge": "注目トピック",
-            "keyword": "刀剣乱舞 グッズ",
-            "has_product_links": True,
-            "image_seed": 62,
-            "created_at": "2026-09-09T10:00:00+00:00",
-        },
         {
             "source_link": "https://example.com/demo/anime-spring",
             "title": "今期注目のアニメ化作品。放送前に押さえておきたい見どころ",
@@ -671,15 +487,12 @@ def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
 
     entries = load_entries()
     existing_ids = {e.article_id for e in entries}
-    # シリーズ関連デモは不足時に優先追加（関連枠のサンプル用）
-    series_demos = demos[:2]
-    other_demos = demos[2:]
-    for demo in series_demos + other_demos:
+    for demo in demos:
+        if len(entries) >= min_total:
+            break
         aid = article_id_from_link(str(demo["source_link"]))
         if aid in existing_ids:
             continue
-        if demo not in series_demos and len(entries) >= min_total:
-            break
         publish_article(
             source_link=str(demo["source_link"]),
             title=str(demo["title"]),
@@ -714,7 +527,6 @@ def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
                     badge=new_badge,
                     image_seed=e.image_seed or _image_seed_from_id(e.article_id),
                     links=e.links,
-                    body=e.body,
                 )
             )
         else:
@@ -723,4 +535,5 @@ def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
         save_entries(refreshed)
     else:
         refreshed = entries
-    return rewrite_all_article_pages(refreshed)
+    (DOCS / "index.html").write_text(render_index_page(refreshed), encoding="utf-8")
+    return refreshed
