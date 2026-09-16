@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.1.0
+# Version: 1.1.1
 # Date: 2026-09-16
-# Summary: カード型UI生成とカテゴリ名の見直し
+# Summary: 読み物記事の買い物リンク無し断りを削除
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -177,11 +177,7 @@ def _plain_to_paragraphs(text: str) -> str:
 
 def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
     if not has_product_links:
-        return (
-            '<div class="link-panel news-only">'
-            "<p>この記事は読み物・ニュース紹介です。買い物リンクは掲載していません。</p>"
-            "</div>"
-        )
+        return ""
     items = [
         ("amazon", "Amazonで見る", "btn-amazon"),
         ("rakuten", "楽天で見る", "btn-rakuten"),
