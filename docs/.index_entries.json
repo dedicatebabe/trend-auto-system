@@ -10,6 +10,7 @@
       "has_product_links": false,
       "keyword": "業界コラム",
       "badge": "NEWS",
+      "image_seed": 22,
       "links": {}
     },
     {
@@ -21,13 +22,79 @@
       "created_at": "2026-09-16T03:45:33.922917+00:00",
       "has_product_links": true,
       "keyword": "刀剣乱舞 くじ",
-      "badge": "商品",
+      "badge": "注目アイテム",
+      "image_seed": 15,
       "links": {
         "amazon": "https://www.amazon.co.jp/s?k=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&tag=djtaikutsu-22",
         "rakuten": "https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598%2F&link_type=text&id=0",
         "mercari": "https://jp.mercari.com/search?keyword=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&status=on_sale&afid=1",
         "surugaya": "https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=1&action=default&url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598"
       }
+    },
+    {
+      "article_id": "n_1fe3d6670a",
+      "filename": "article_n_1fe3d6670a.html",
+      "title": "今期注目のアニメ化作品。放送前に押さえておきたい見どころ",
+      "excerpt": "話題の原作が映像化されます。 キャラクター設計と世界観のどこが魅力かを、短く整理しました。",
+      "source_link": "https://example.com/demo/anime-spring",
+      "created_at": "2026-09-15T10:00:00+00:00",
+      "has_product_links": false,
+      "keyword": "アニメ化 注目作品",
+      "badge": "アニメ",
+      "image_seed": 11,
+      "links": {}
+    },
+    {
+      "article_id": "n_93bf959dc4",
+      "filename": "article_n_93bf959dc4.html",
+      "title": "スイッチ向け新作が話題。プレイ前に確認したい3つのポイント",
+      "excerpt": "新作タイトルの情報が広がっています。 難易度、プレイ時間、周辺グッズの有無など、始める前に見たい点をまとめました。",
+      "source_link": "https://example.com/demo/game-switch",
+      "created_at": "2026-09-14T10:00:00+00:00",
+      "has_product_links": false,
+      "keyword": "Nintendo Switch 新作",
+      "badge": "ゲーム",
+      "image_seed": 22,
+      "links": {}
+    },
+    {
+      "article_id": "n_4a49fb56a0",
+      "filename": "article_n_4a49fb56a0.html",
+      "title": "軽量ワイヤレスイヤホンの選び方。通勤・学習向けチェックリスト",
+      "excerpt": "装着感、バッテリー、ノイズキャンセリング。 失敗しにくい比較観点をわかりやすく紹介します。",
+      "source_link": "https://example.com/demo/gadget-earbuds",
+      "created_at": "2026-09-13T10:00:00+00:00",
+      "has_product_links": false,
+      "keyword": "ワイヤレスイヤホン",
+      "badge": "ガジェット",
+      "image_seed": 33,
+      "links": {}
+    },
+    {
+      "article_id": "n_57286dd9b5",
+      "filename": "article_n_57286dd9b5.html",
+      "title": "人気キャラのアクリルスタンド。探すときの状態チェック",
+      "excerpt": "公式グッズの中でも人気が高いアイテムです。 傷の有無や箱あり・箱なしなど、見るべき点を整理しました。",
+      "source_link": "https://example.com/demo/goods-acrylic",
+      "created_at": "2026-09-12T10:00:00+00:00",
+      "has_product_links": false,
+      "keyword": "アクリルスタンド",
+      "badge": "トレンドグッズ",
+      "image_seed": 44,
+      "links": {}
+    },
+    {
+      "article_id": "n_a582f67ab6",
+      "filename": "article_n_a582f67ab6.html",
+      "title": "完結アニメのBlu-ray。揃える前に見るべきスペック",
+      "excerpt": "収録話数、特典、音声仕様。 購入前に確認したいポイントをコンパクトにまとめました。",
+      "source_link": "https://example.com/demo/anime-bd",
+      "created_at": "2026-09-11T10:00:00+00:00",
+      "has_product_links": false,
+      "keyword": "アニメ Blu-ray",
+      "badge": "アニメ",
+      "image_seed": 55,
+      "links": {}
     }
   ]
 }

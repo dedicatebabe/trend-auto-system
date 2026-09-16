@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.0
+# Version: 1.1.0
 # Date: 2026-09-16
-# Summary: メディア型トップと個別記事HTMLの生成
+# Summary: カード型UI生成とカテゴリ名の見直し
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -24,6 +24,15 @@ ENTRIES_FILE = DOCS / ".index_entries.json"
 SITE_BASE = "https://dedicatebabe.github.io/trend-auto-system"
 TOP_LIST_LIMIT = 6
 
+BADGE_CLASS = {
+    "NEWS": "badge-news",
+    "注目アイテム": "badge-item",
+    "トレンドグッズ": "badge-goods",
+    "アニメ": "badge-anime",
+    "ゲーム": "badge-game",
+    "ガジェット": "badge-gadget",
+}
+
 
 @dataclass
 class ArticleEntry:
@@ -38,6 +47,7 @@ class ArticleEntry:
     has_product_links: bool = False
     keyword: str = ""
     badge: str = "NEWS"
+    image_seed: int = 1
     links: dict[str, str] = field(default_factory=dict)
 
 
@@ -53,6 +63,24 @@ def article_filename(article_id: str) -> str:
 
 def article_public_url(article_id: str, *, base: str = SITE_BASE) -> str:
     return f"{base.rstrip('/')}/{article_filename(article_id)}"
+
+
+def _badge_for(*, has_product_links: bool, badge: str | None = None) -> str:
+    if badge and badge.strip():
+        raw = badge.strip()
+        if raw in ("商品", "商品ピックアップ"):
+            return "注目アイテム"
+        return raw
+    return "注目アイテム" if has_product_links else "NEWS"
+
+
+def _image_seed_from_id(article_id: str) -> int:
+    digest = hashlib.md5(article_id.encode("utf-8")).hexdigest()
+    return (int(digest[:6], 16) % 90) + 1
+
+
+def _thumb_url(seed: int) -> str:
+    return f"https://picsum.photos/600/400?random={int(seed)}"
 
 
 def _load_template(name: str) -> str:
@@ -86,6 +114,16 @@ def load_entries() -> list[ArticleEntry]:
         filename = str(row.get("filename", "")).strip()
         if not aid or not filename:
             continue
+        has_links = bool(row.get("has_product_links", False))
+        badge = _badge_for(
+            has_product_links=has_links,
+            badge=str(row.get("badge", "") or ""),
+        )
+        seed_raw = row.get("image_seed")
+        try:
+            seed = int(seed_raw) if seed_raw is not None else _image_seed_from_id(aid)
+        except (TypeError, ValueError):
+            seed = _image_seed_from_id(aid)
         entries.append(
             ArticleEntry(
                 article_id=aid,
@@ -94,9 +132,10 @@ def load_entries() -> list[ArticleEntry]:
                 excerpt=str(row.get("excerpt", "") or ""),
                 source_link=str(row.get("source_link", "") or ""),
                 created_at=str(row.get("created_at", "") or ""),
-                has_product_links=bool(row.get("has_product_links", False)),
+                has_product_links=has_links,
                 keyword=str(row.get("keyword", "") or ""),
-                badge=str(row.get("badge", "NEWS") or "NEWS"),
+                badge=badge,
+                image_seed=seed,
                 links={str(k): str(v) for k, v in (row.get("links") or {}).items()},
             )
         )
@@ -117,6 +156,7 @@ def save_entries(entries: list[ArticleEntry]) -> None:
                 "has_product_links": e.has_product_links,
                 "keyword": e.keyword,
                 "badge": e.badge,
+                "image_seed": e.image_seed,
                 "links": e.links,
             }
             for e in entries
@@ -139,7 +179,7 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
     if not has_product_links:
         return (
             '<div class="link-panel news-only">'
-            "<p>この記事は読み物・ニュース紹介です。商品リンクは掲載していません。</p>"
+            "<p>この記事は読み物・ニュース紹介です。買い物リンクは掲載していません。</p>"
             "</div>"
         )
     items = [
@@ -161,7 +201,7 @@ def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> st
         return ""
     return (
         '<div class="link-panel">'
-        "<p class=\"link-label\">在庫・相場を比較する</p>"
+        '<p class="link-label">在庫・相場を比較する</p>'
         f'<div class="btn-grid">{"".join(buttons)}</div>'
         "</div>"
     )
@@ -176,9 +216,10 @@ def render_article_page(
     has_product_links: bool,
     links: dict[str, str],
     canonical_url: str,
+    badge: str | None = None,
 ) -> str:
     excerpt = re.sub(r"\s+", " ", body).strip()[:120]
-    badge = "商品ピックアップ" if has_product_links else "ニュース"
+    badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
     template = _load_template("article.html")
     return _apply(
         template,
@@ -186,7 +227,7 @@ def render_article_page(
             "PAGE_TITLE": html.escape(title),
             "META_DESCRIPTION": html.escape(excerpt),
             "CANONICAL_URL": html.escape(canonical_url),
-            "BADGE": html.escape(badge),
+            "BADGE": html.escape(badge_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
             "ARTICLE_BODY": _plain_to_paragraphs(body),
             "SOURCE_URL": html.escape(source_link, quote=True),
@@ -198,14 +239,29 @@ def render_article_page(
     )
 
 
-def _render_list_item(entry: ArticleEntry) -> str:
+def _badge_class(badge: str) -> str:
+    return BADGE_CLASS.get(badge, "badge-news")
+
+
+def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
+    cls = "card card-featured" if featured else "card"
+    title_tag = "h2" if featured else "h3"
+    title = html.escape(entry.title)
+    excerpt = html.escape((entry.excerpt or "")[:140])
+    date = html.escape(entry.created_at[:10] if entry.created_at else "")
+    badge = html.escape(entry.badge)
+    badge_cls = _badge_class(entry.badge)
+    href = html.escape(entry.filename)
+    thumb = html.escape(_thumb_url(entry.image_seed), quote=True)
     return (
-        f'<a class="story-item" href="{html.escape(entry.filename)}">'
-        f'<span class="story-badge">{html.escape(entry.badge)}</span>'
-        f"<h3>{html.escape(entry.title)}</h3>"
-        f'<p>{html.escape(entry.excerpt[:110])}</p>'
-        f'<span class="story-date">{html.escape(entry.created_at[:10])}</span>'
-        f"</a>"
+        f'<a class="{cls}" href="{href}">'
+        f'<div class="card-thumb"><img src="{thumb}" alt="" loading="lazy"></div>'
+        f'<div class="card-body">'
+        f'<span class="badge {badge_cls}">{badge}</span>'
+        f"<{title_tag}>{title}</{title_tag}>"
+        f'<p class="card-excerpt">{excerpt}</p>'
+        f'<span class="card-date">{date}</span>'
+        f"</div></a>"
     )
 
 
@@ -214,29 +270,25 @@ def render_index_page(entries: list[ArticleEntry]) -> str:
     template = _load_template("index.html")
     if not sorted_entries:
         featured = (
-            '<div class="featured empty">'
+            '<div class="card card-featured">'
+            '<div class="card-body">'
             "<h2>まだ記事がありません</h2>"
-            "<p>自動更新後に最新トピックが表示されます。</p>"
-            "</div>"
+            '<p class="card-excerpt">自動更新後に最新トピックが表示されます。</p>'
+            "</div></div>"
         )
-        latest = ""
+        latest = '<p class="empty">追加の記事はまだありません。</p>'
     else:
         top = sorted_entries[0]
-        featured = (
-            f'<a class="featured" href="{html.escape(top.filename)}">'
-            f'<span class="eyebrow">{html.escape(top.badge)}</span>'
-            f"<h2>{html.escape(top.title)}</h2>"
-            f"<p>{html.escape(top.excerpt[:160])}</p>"
-            f'<span class="read-more">記事を読む →</span>'
-            f"</a>"
+        featured = _render_card(top, featured=True)
+        rest = sorted_entries[1 : TOP_LIST_LIMIT + 1]
+        latest = "\n".join(_render_card(e) for e in rest) or (
+            '<p class="empty">追加の記事はまだありません。</p>'
         )
-        rest = sorted_entries[1:TOP_LIST_LIMIT]
-        latest = "\n".join(_render_list_item(e) for e in rest)
     return _apply(
         template,
         {
             "FEATURED_BLOCK": featured,
-            "LATEST_LIST": latest or '<p class="muted">追加の記事はまだありません。</p>',
+            "LATEST_LIST": latest,
             "YEAR": str(datetime.now(timezone.utc).year),
         },
     )
@@ -251,6 +303,8 @@ def publish_article(
     keyword: str,
     links: dict[str, str] | None = None,
     created_at: str | None = None,
+    badge: str | None = None,
+    image_seed: int | None = None,
 ) -> ArticleEntry:
     """個別記事を書き、entries と index を更新する。"""
     DOCS.mkdir(parents=True, exist_ok=True)
@@ -258,7 +312,8 @@ def publish_article(
     filename = article_filename(aid)
     stamp = created_at or datetime.now(timezone.utc).isoformat()
     excerpt = re.sub(r"\s+", " ", body).strip()[:140]
-    badge = "商品" if has_product_links else "NEWS"
+    badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
+    seed = image_seed if image_seed is not None else _image_seed_from_id(aid)
     entry = ArticleEntry(
         article_id=aid,
         filename=filename,
@@ -268,7 +323,8 @@ def publish_article(
         created_at=stamp,
         has_product_links=has_product_links,
         keyword=keyword,
-        badge=badge,
+        badge=badge_label,
+        image_seed=seed,
         links=links or {},
     )
 
@@ -280,6 +336,7 @@ def publish_article(
         has_product_links=has_product_links,
         links=entry.links,
         canonical_url=article_public_url(aid),
+        badge=badge_label,
     )
     (DOCS / filename).write_text(page, encoding="utf-8")
     logger.info("個別記事を出力: %s", filename)
@@ -293,3 +350,116 @@ def publish_article(
     (DOCS / "index.html").write_text(index_html, encoding="utf-8")
     logger.info("index.html を再生成（件数=%s）", len(entries))
     return entry
+
+
+def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
+    """
+    トップの賑わい用にダミー記事を補充する。
+
+    既存エントリが min_total 未満なら不足分を追加し、index を再生成する。
+    """
+    demos = [
+        {
+            "source_link": "https://example.com/demo/anime-spring",
+            "title": "今期注目のアニメ化作品。放送前に押さえておきたい見どころ",
+            "body": "話題の原作が映像化されます。\n\nキャラクター設計と世界観のどこが魅力かを、短く整理しました。",
+            "badge": "アニメ",
+            "keyword": "アニメ化 注目作品",
+            "has_product_links": False,
+            "image_seed": 11,
+            "created_at": "2026-09-15T10:00:00+00:00",
+        },
+        {
+            "source_link": "https://example.com/demo/game-switch",
+            "title": "スイッチ向け新作が話題。プレイ前に確認したい3つのポイント",
+            "body": "新作タイトルの情報が広がっています。\n\n難易度、プレイ時間、周辺グッズの有無など、始める前に見たい点をまとめました。",
+            "badge": "ゲーム",
+            "keyword": "Nintendo Switch 新作",
+            "has_product_links": False,
+            "image_seed": 22,
+            "created_at": "2026-09-14T10:00:00+00:00",
+        },
+        {
+            "source_link": "https://example.com/demo/gadget-earbuds",
+            "title": "軽量ワイヤレスイヤホンの選び方。通勤・学習向けチェックリスト",
+            "body": "装着感、バッテリー、ノイズキャンセリング。\n\n失敗しにくい比較観点をわかりやすく紹介します。",
+            "badge": "ガジェット",
+            "keyword": "ワイヤレスイヤホン",
+            "has_product_links": False,
+            "image_seed": 33,
+            "created_at": "2026-09-13T10:00:00+00:00",
+        },
+        {
+            "source_link": "https://example.com/demo/goods-acrylic",
+            "title": "人気キャラのアクリルスタンド。探すときの状態チェック",
+            "body": "公式グッズの中でも人気が高いアイテムです。\n\n傷の有無や箱あり・箱なしなど、見るべき点を整理しました。",
+            "badge": "トレンドグッズ",
+            "keyword": "アクリルスタンド",
+            "has_product_links": False,
+            "image_seed": 44,
+            "created_at": "2026-09-12T10:00:00+00:00",
+        },
+        {
+            "source_link": "https://example.com/demo/anime-bd",
+            "title": "完結アニメのBlu-ray。揃える前に見るべきスペック",
+            "body": "収録話数、特典、音声仕様。\n\n購入前に確認したいポイントをコンパクトにまとめました。",
+            "badge": "アニメ",
+            "keyword": "アニメ Blu-ray",
+            "has_product_links": False,
+            "image_seed": 55,
+            "created_at": "2026-09-11T10:00:00+00:00",
+        },
+    ]
+
+    entries = load_entries()
+    existing_ids = {e.article_id for e in entries}
+    for demo in demos:
+        if len(entries) >= min_total:
+            break
+        aid = article_id_from_link(str(demo["source_link"]))
+        if aid in existing_ids:
+            continue
+        publish_article(
+            source_link=str(demo["source_link"]),
+            title=str(demo["title"]),
+            body=str(demo["body"]),
+            has_product_links=bool(demo["has_product_links"]),
+            keyword=str(demo["keyword"]),
+            badge=str(demo["badge"]),
+            image_seed=int(demo["image_seed"]),
+            created_at=str(demo["created_at"]),
+            links={},
+        )
+        entries = load_entries()
+        existing_ids = {e.article_id for e in entries}
+
+    # 既存の「商品」バッジを置換して再描画
+    changed = False
+    refreshed: list[ArticleEntry] = []
+    for e in entries:
+        new_badge = _badge_for(has_product_links=e.has_product_links, badge=e.badge)
+        if new_badge != e.badge or not e.image_seed:
+            changed = True
+            refreshed.append(
+                ArticleEntry(
+                    article_id=e.article_id,
+                    filename=e.filename,
+                    title=e.title,
+                    excerpt=e.excerpt,
+                    source_link=e.source_link,
+                    created_at=e.created_at,
+                    has_product_links=e.has_product_links,
+                    keyword=e.keyword,
+                    badge=new_badge,
+                    image_seed=e.image_seed or _image_seed_from_id(e.article_id),
+                    links=e.links,
+                )
+            )
+        else:
+            refreshed.append(e)
+    if changed:
+        save_entries(refreshed)
+    else:
+        refreshed = entries
+    (DOCS / "index.html").write_text(render_index_page(refreshed), encoding="utf-8")
+    return refreshed
