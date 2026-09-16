@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.2.0
+Version: 2.3.1
 Date: 2026-09-16
-Summary: 関連リンクを控えめにし出典を本文直後へ
+Summary: 出典リンク出し分けとショップはアイコンのみ表示
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -90,40 +90,30 @@ Summary: 関連リンクを控えめにし出典を本文直後へ
       font-weight: 700;
       border-bottom: 2px solid #9ec0e8;
     }
-    .link-panel {
-      margin-top: 1.35rem;
-      padding: 0.85rem 0.9rem;
-      border: 1px dashed var(--line);
-      border-radius: 10px;
-      background: #fafbfc;
-    }
-    .link-label {
-      margin: 0 0 0.55rem;
-      text-align: left;
-      color: #8091a5;
-      font-size: 0.75rem;
-      font-weight: 500;
-      letter-spacing: 0.02em;
-    }
-    .btn-grid {
+    .shop-icons {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem;
+      gap: 0.45rem;
+      margin-top: 1.15rem;
     }
-    .btn {
+    .shop-icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 34px;
-      padding: 0.35rem 0.7rem;
+      width: 36px;
+      height: 36px;
       border-radius: 999px;
       color: #fff !important;
       font-size: 0.78rem;
-      font-weight: 600;
-      text-align: center;
+      font-weight: 800;
+      letter-spacing: 0;
       opacity: 0.92;
+      transition: transform 0.15s ease, opacity 0.15s ease;
     }
-    .btn:hover { opacity: 1; }
+    .shop-icon:hover {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
     .btn-amazon { background: var(--amazon); color: #111 !important; }
     .btn-rakuten { background: var(--rakuten); }
     .btn-mercari { background: var(--mercari); }
@@ -160,15 +150,15 @@ Summary: 関連リンクを控えめにし出典を本文直後へ
         <p>刀剣乱舞ONLINE のフリューくじが話題になっています。</p>
 <p>景品ラインナップや展開のポイントを短く整理しました。気になる人は公式情報もあわせて確認を。</p>
       </div>
-      <a class="source-link" href="https://prtimes.jp/example/product" rel="noopener" target="_blank">元の発表・記事を見る</a>
-      <div class="link-panel"><p class="link-label">関連リンク（任意）</p><div class="btn-grid"><a class="btn btn-amazon" href="https://www.amazon.co.jp/s?k=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&amp;tag=djtaikutsu-22" rel="nofollow sponsored noopener" target="_blank">Amazon</a><a class="btn btn-rakuten" href="https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598%2F&amp;link_type=text&amp;id=0" rel="nofollow sponsored noopener" target="_blank">楽天</a><a class="btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&amp;status=on_sale&amp;afid=1" rel="nofollow sponsored noopener" target="_blank">メルカリ</a><a class="btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=1&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598" rel="nofollow sponsored noopener" target="_blank">駿河屋</a></div></div>
+      
+      <div class="shop-icons" aria-label="関連ショップ"><a class="shop-icon btn-amazon" href="https://www.amazon.co.jp/s?k=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&amp;tag=djtaikutsu-22" rel="nofollow sponsored noopener" target="_blank" title="Amazon" aria-label="Amazon"><span aria-hidden="true">A</span></a><a class="shop-icon btn-rakuten" href="https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598%2F&amp;link_type=text&amp;id=0" rel="nofollow sponsored noopener" target="_blank" title="楽天" aria-label="楽天"><span aria-hidden="true">楽</span></a><a class="shop-icon btn-mercari" href="https://jp.mercari.com/search?keyword=%E5%88%80%E5%89%A3%E4%B9%B1%E8%88%9E%20%E3%81%8F%E3%81%98&amp;status=on_sale&amp;afid=1" rel="nofollow sponsored noopener" target="_blank" title="メルカリ" aria-label="メルカリ"><span aria-hidden="true">M</span></a><a class="shop-icon btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=1&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E5%2588%2580%25E5%2589%25A3%25E4%25B9%25B1%25E8%2588%259E%2520%25E3%2581%258F%25E3%2581%2598" rel="nofollow sponsored noopener" target="_blank" title="駿河屋" aria-label="駿河屋"><span aria-hidden="true">駿</span></a></div>
     </article>
     <a class="back" href="index.html">← トップへ戻る</a>
   </main>
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
-      <div>一部の記事には関連リンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
+      <div>一部の記事にはショップへのリンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
       <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシー</a></div>
       <div>&copy; 2026 Trend Pick</div>
     </div>

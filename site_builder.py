@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.3.0
+# Version: 1.3.1
 # Date: 2026-09-16
-# Summary: トレンドトピック主軸の見せ方に調整
+# Summary: 出典リンク切れ対策と関連リンク文言の削除
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -212,32 +212,55 @@ def _plain_to_paragraphs(text: str) -> str:
     return "\n".join(f"<p>{html.escape(c)}</p>" for c in chunks)
 
 
+def _is_usable_source_url(url: str) -> bool:
+    """デモ用・明らかに無効な出典URLは出さない。"""
+    value = (url or "").strip().lower()
+    if not value.startswith(("http://", "https://")):
+        return False
+    blocked = (
+        "example.com",
+        "prtimes.jp/example",
+        "localhost",
+        "127.0.0.1",
+    )
+    return not any(token in value for token in blocked)
+
+
+def _source_link_html(source_link: str) -> str:
+    if not _is_usable_source_url(source_link):
+        return ""
+    href = html.escape(source_link, quote=True)
+    return (
+        f'<a class="source-link" href="{href}" rel="noopener" target="_blank">'
+        "元の発表・記事を見る"
+        "</a>"
+    )
+
+
 def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
     if not has_product_links:
         return ""
     items = [
-        ("amazon", "Amazon", "btn-amazon"),
-        ("rakuten", "楽天", "btn-rakuten"),
-        ("mercari", "メルカリ", "btn-mercari"),
-        ("surugaya", "駿河屋", "btn-surugaya"),
+        ("amazon", "Amazon", "A", "btn-amazon"),
+        ("rakuten", "楽天", "楽", "btn-rakuten"),
+        ("mercari", "メルカリ", "M", "btn-mercari"),
+        ("surugaya", "駿河屋", "駿", "btn-surugaya"),
     ]
     buttons: list[str] = []
-    for key, label, cls in items:
+    for key, label, mark, cls in items:
         url = links.get(key, "").strip()
         if not url:
             continue
         buttons.append(
-            f'<a class="btn {cls}" href="{html.escape(url, quote=True)}" '
-            f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
+            f'<a class="shop-icon {cls}" href="{html.escape(url, quote=True)}" '
+            f'rel="nofollow sponsored noopener" target="_blank" '
+            f'title="{html.escape(label)}" aria-label="{html.escape(label)}">'
+            f'<span aria-hidden="true">{html.escape(mark)}</span>'
+            f"</a>"
         )
     if not buttons:
         return ""
-    return (
-        '<div class="link-panel">'
-        '<p class="link-label">関連リンク（任意）</p>'
-        f'<div class="btn-grid">{"".join(buttons)}</div>'
-        "</div>"
-    )
+    return f'<div class="shop-icons" aria-label="関連ショップ">{"".join(buttons)}</div>'
 
 
 def render_article_page(
@@ -263,7 +286,7 @@ def render_article_page(
             "BADGE": html.escape(badge_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
             "ARTICLE_BODY": _plain_to_paragraphs(body),
-            "SOURCE_URL": html.escape(source_link, quote=True),
+            "SOURCE_LINK": _source_link_html(source_link),
             "PRODUCT_LINKS": _product_links_html(
                 links, has_product_links=has_product_links
             ),
