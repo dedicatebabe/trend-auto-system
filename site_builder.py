@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.2.0
+# Version: 1.2.1
 # Date: 2026-09-16
-# Summary: グラデ表紙・空カテゴリchip・トップニュース選定
+# Summary: カードの画像・表紙エリアを撤去
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -90,11 +90,6 @@ def _badge_for(*, has_product_links: bool, badge: str | None = None) -> str:
 def _image_seed_from_id(article_id: str) -> int:
     digest = hashlib.md5(article_id.encode("utf-8")).hexdigest()
     return (int(digest[:6], 16) % 90) + 1
-
-
-def _thumb_class(badge: str) -> str:
-    """カテゴリに対応する写真なしグラデ表紙クラス。"""
-    return _badge_class(badge).replace("badge-", "thumb-", 1)
 
 
 def _load_template(name: str) -> str:
@@ -301,13 +296,9 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
     date = html.escape(entry.created_at[:10] if entry.created_at else "")
     badge = html.escape(entry.badge)
     badge_cls = _badge_class(entry.badge)
-    thumb_cls = _thumb_class(entry.badge)
     href = html.escape(entry.filename)
     return (
         f'<a class="{cls}" href="{href}">'
-        f'<div class="card-thumb {thumb_cls}">'
-        f'<span class="thumb-label">{badge}</span>'
-        f"</div>"
         f'<div class="card-body">'
         f'<span class="badge {badge_cls}">{badge}</span>'
         f"<{title_tag}>{title}</{title_tag}>"
@@ -324,9 +315,6 @@ def render_index_page(entries: list[ArticleEntry]) -> str:
     if not sorted_entries:
         featured = (
             '<div class="card card-featured">'
-            '<div class="card-thumb thumb-news">'
-            '<span class="thumb-label">NEWS</span>'
-            "</div>"
             '<div class="card-body">'
             "<h2>まだ記事がありません</h2>"
             '<p class="card-excerpt">自動更新後に最新トピックが表示されます。</p>'
