@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.0.0
-# Date: 2026-09-16
-# Summary: 商品アフィリボット向けに更新
+# Version: 2.1.0
+# Date: 2026-09-17
+# Summary: X自動投稿を有効化（--skip-x を解除）
 # ==========================================
 name: Trend Pick Bot
 
@@ -42,7 +42,7 @@ jobs:
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
-        run: python main.py --skip-x --per-source 5 --pool 20
+        run: python main.py --per-source 5 --pool 20
 
       - name: Commit and push docs and posted.json
         run: |
