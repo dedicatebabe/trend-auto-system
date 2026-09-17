@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.3.1
-# Date: 2026-09-16
-# Summary: Amazon商品画像のロゴ誤検知を排除
+# Version: 1.4.0
+# Date: 2026-09-17
+# Summary: ホビー特化の新カテゴリ判定に切替
 # ==========================================
 """
 売れ筋ランキング起点の商品取得。
@@ -142,16 +142,40 @@ def is_usable_product_title(title: str) -> bool:
 
 
 def _badge_for_title(title: str) -> str:
+    """新カテゴリ体系でバッジを返す。"""
     t = title or ""
-    if any(x in t for x in ("Switch", "PlayStation", "PS5", "ゲーム", "ソフト")):
-        return "ゲーム"
-    if any(x in t for x in ("イヤホン", "ガジェット", "スマホ", "充電", "キーボード")):
-        return "ガジェット"
-    if any(x in t for x in ("フィギュア", "一番くじ", "くじ", "グッズ", "アクリル")):
-        return "カルチャー"
-    if any(x in t for x in ("アニメ", "Blu-ray", "ブルーレイ", "漫画", "コミック")):
-        return "アニメ"
-    return "注目トピック"
+    if any(x in t for x in ("ポケモン", "ポケカ", "ピカチュウ", "ストームエメラルダ")):
+        return "ポケモン"
+    if any(x in t for x in ("めじるし", "ガチャ", "カプセルトイ", "ガシャポン", "ガシャ")):
+        return "めじるしチャーム・ガチャ"
+    if any(
+        x in t
+        for x in (
+            "サンリオ",
+            "ハローキティ",
+            "マイメロ",
+            "シナモロール",
+            "クロミ",
+            "ポムポムプリン",
+        )
+    ):
+        return "サンリオ・キャラグッズ"
+    if any(
+        x in t
+        for x in (
+            "ベイブレード",
+            "トレカ",
+            "カードゲーム",
+            "ONE PIECE",
+            "ワンピカード",
+            "遊戯王",
+            "デュエマ",
+        )
+    ):
+        return "ベイブレード・トレカ"
+    if any(x in t for x in ("フィギュア", "NIKKE", "フリーレン", "ホビー", "一番くじ")):
+        return "フィギュア・ホビー"
+    return "フィギュア・ホビー"
 
 
 def amazon_product_url(asin: str, *, tag: str | None = None) -> str:

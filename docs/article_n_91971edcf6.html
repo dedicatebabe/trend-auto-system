@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 2.5.0
+Version: 3.0.0
 Date: 2026-09-17
-Summary: ショップリンクを店名テキストボタンに変更
+Summary: 要約枠・CTA・FAQ・AdSense枠付き記事テンプレ
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -20,189 +20,34 @@ Summary: ショップリンクを店名テキストボタンに変更
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --ink: #101820;
-      --navy: #0b1d36;
-      --paper: #f3f5f8;
-      --surface: #ffffff;
-      --text: #142033;
-      --muted: #5b6b82;
-      --line: #d7dee8;
-      --accent: #1d4f91;
-      --amazon: #ff9900;
-      --rakuten: #bf0000;
-      --mercari: #ff333f;
-      --surugaya: #0b1d36;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
-      color: var(--text);
-      background: var(--paper);
-      line-height: 1.8;
-    }
-    a { color: inherit; text-decoration: none; }
-    .wrap { width: min(760px, calc(100% - 2rem)); margin: 0 auto; }
-    .site-header {
-      background: var(--ink);
-      color: #fff;
-    }
-    .header-inner {
-      min-height: 56px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .brand { font-family: "Outfit", sans-serif; font-weight: 700; }
-    .brand span { color: #7ddec0; }
-    .nav-link { color: rgba(255,255,255,.85); font-size: 0.86rem; }
-    .main { padding: 1.4rem 0 3rem; }
-    .article {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 1.35rem 1.25rem 1.6rem;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      margin: 0 0 0.7rem;
-      padding: 0.22rem 0.62rem;
-      background: #e8eef7;
-      color: var(--accent);
-      font-size: 0.7rem;
-      font-weight: 700;
-      border-radius: 999px;
-      letter-spacing: 0.04em;
-    }
-    h1 {
-      margin: 0 0 0.45rem;
-      font-size: clamp(1.3rem, 3vw, 1.75rem);
-      line-height: 1.4;
-      color: var(--navy);
-      font-weight: 900;
-    }
-    .meta { margin: 0 0 1.1rem; color: var(--muted); font-size: 0.86rem; }
-    .product-media {
-      margin: 0 0 1.25rem;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #eef2f7;
-      border: 1px solid var(--line);
-      aspect-ratio: 1 / 1;
-      max-height: 420px;
-      display: grid;
-      place-items: center;
-    }
-    .product-media img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-      background: #fff;
-    }
-    .content p { margin: 0.55rem 0 0.95rem; }
-    .content .lead {
-      font-size: 1.02rem;
-      font-weight: 700;
-      color: var(--navy);
-      line-height: 1.75;
-      margin: 0 0 1.15rem;
-      padding-bottom: 0.95rem;
-      border-bottom: 1px solid var(--line);
-    }
-    .content h2 {
-      margin: 1.35rem 0 0.45rem;
-      font-size: 0.95rem;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      color: var(--accent);
-      border-left: 3px solid var(--accent);
-      padding-left: 0.55rem;
-      line-height: 1.4;
-    }
-    .content ul {
-      margin: 0.35rem 0 1rem;
-      padding: 0 0 0 1.15rem;
-    }
-    .content li {
-      margin: 0.28rem 0;
-      color: var(--text);
-    }
-    .source-link {
-      display: inline-block;
-      margin-top: 1.1rem;
-      color: var(--accent);
-      font-weight: 700;
-      border-bottom: 2px solid #9ec0e8;
-    }
-    .shop-links {
-      margin-top: 1.35rem;
-      padding-top: 1.1rem;
-      border-top: 1px solid var(--line);
-    }
-    .shop-links-label {
-      margin: 0 0 0.55rem;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--muted);
-    }
-    .shop-btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .shop-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0.45rem 0.9rem;
-      border-radius: 8px;
-      color: #fff !important;
-      font-size: 0.88rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      opacity: 0.95;
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }
-    .shop-btn:hover {
-      opacity: 1;
-      transform: translateY(-1px);
-    }
-    .btn-amazon { background: var(--amazon); color: #111 !important; }
-    .btn-rakuten { background: var(--rakuten); }
-    .btn-mercari { background: var(--mercari); }
-    .btn-surugaya { background: var(--surugaya); }
-    .back {
-      display: inline-block;
-      margin-top: 1.2rem;
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    .site-footer {
-      background: var(--navy);
-      color: rgba(255,255,255,.75);
-      font-size: 0.8rem;
-    }
-    .footer-inner { padding: 1.3rem 0; display: grid; gap: 0.2rem; }
-    .footer-inner a { color: #cfe0f5; text-decoration: underline; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="wrap header-inner">
+    <div class="wrap-narrow header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
-      <a class="nav-link" href="index.html">記事一覧</a>
+      <a class="nav" href="index.html" style="color:var(--muted);">記事一覧</a>
     </div>
   </header>
 
-  <main class="main wrap">
+  <main class="article-main wrap-narrow">
+    <p class="aff-note">※本ページはアフィリエイト広告を利用しています</p>
+
     <article class="article">
-      <span class="badge">注目トピック</span>
+      <div class="badge-row">
+        <span class="badge badge-beyblade">ベイブレード・トレカ</span>
+        <span class="badge-status is-rise">人気急上昇</span>
+      </div>
       <h1>「ベイブレードX」左回転専用ツール「BX-56 ストリングランチャーL」の特徴</h1>
       <p class="meta">2026-09-16</p>
+
       <figure class="product-media"><img src="https://m.media-amazon.com/images/I/51zpUItfErL._AC_SL1100_.jpg" alt="「ベイブレードX」左回転専用ツール「BX-56 ストリングランチャーL」の特徴" loading="lazy" decoding="async" referrerpolicy="no-referrer"></figure>
+      <section class="summary-box" aria-label="この記事の注目ポイント"><h2>この記事の注目ポイント3選</h2><ol><li>左回転ベイブレード専用のストリングランチャー</li><li>紐を引っ張る操作で素早いシュートが可能</li><li>ワインダー不要で持ち運びや連続試走がスムーズ</li></ol></section>
+
+      <div class="adsense-slot" aria-label="広告枠（準備中）">AdSense Slot</div>
+
+      <section class="cta-compare" aria-label="購入先比較"><h2>今すぐ各ショップで探す</h2><p class="cta-note">在庫と価格はショップごとに違います。気になる方は先に比較してください。</p><div class="cta-grid"><a class="cta-btn cta-amazon" href="https://www.amazon.co.jp/dp/B0HJ7CPXJ6?tag=djtaikutsu-22" rel="nofollow sponsored noopener" target="_blank">Amazonで探す</a><a class="cta-btn cta-rakuten" href="https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E3%2583%2599%25E3%2582%25A4%25E3%2583%2596%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2589X%2520BX-56%2520%25E3%2582%25B9%25E3%2583%2588%25E3%2583%25AA%25E3%2583%25B3%25E3%2582%25B0%25E3%2583%25A9%25E3%2583%25B3%25E3%2583%2581%25E3%2583%25A3%25E3%2583%25BCL%2F&amp;link_type=text&amp;id=0" rel="nofollow sponsored noopener" target="_blank">楽天市場で探す</a><a class="cta-btn cta-yahoo" href="https://shopping.yahoo.co.jp/search?p=%E3%83%99%E3%82%A4%E3%83%96%E3%83%AC%E3%83%BC%E3%83%89X%20%E3%82%B9%E3%83%88%E3%83%AA%E3%83%B3%E3%82%B0%E3%83%A9%E3%83%B3%E3%83%81%E3%83%A3%E3%83%BCL" rel="nofollow sponsored noopener" target="_blank">Yahoo!ショッピングで探す</a></div></section>
+
       <div class="content">
         <p class="lead">タカラトミーの「ベイブレードX」シリーズより、左回転ベイのシュートに対応した「BX-56 ストリングランチャーL」が登場しました。紐を引くことで素早くシュートできるストリングタイプのツールで、左回転ベイブレードの性能を引き出すために設計されています。従来のワインダー式とは異なる操作感でプレイ可能です。</p>
 <h2>ポイント</h2>
@@ -212,14 +57,22 @@ Summary: ショップリンクを店名テキストボタンに変更
 <h2>注意点</h2>
 <p>ショップによって価格や在庫状況が変動するため、購入時に最新の販売ページをご確認ください。</p>
       </div>
+
+      <section class="cta-compare" aria-label="購入先比較"><h2>今すぐ各ショップで探す</h2><p class="cta-note">在庫と価格はショップごとに違います。気になる方は先に比較してください。</p><div class="cta-grid"><a class="cta-btn cta-amazon" href="https://www.amazon.co.jp/dp/B0HJ7CPXJ6?tag=djtaikutsu-22" rel="nofollow sponsored noopener" target="_blank">Amazonで探す</a><a class="cta-btn cta-rakuten" href="https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E3%2583%2599%25E3%2582%25A4%25E3%2583%2596%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2589X%2520BX-56%2520%25E3%2582%25B9%25E3%2583%2588%25E3%2583%25AA%25E3%2583%25B3%25E3%2582%25B0%25E3%2583%25A9%25E3%2583%25B3%25E3%2583%2581%25E3%2583%25A3%25E3%2583%25BCL%2F&amp;link_type=text&amp;id=0" rel="nofollow sponsored noopener" target="_blank">楽天市場で探す</a><a class="cta-btn cta-yahoo" href="https://shopping.yahoo.co.jp/search?p=%E3%83%99%E3%82%A4%E3%83%96%E3%83%AC%E3%83%BC%E3%83%89X%20%E3%82%B9%E3%83%88%E3%83%AA%E3%83%B3%E3%82%B0%E3%83%A9%E3%83%B3%E3%83%81%E3%83%A3%E3%83%BCL" rel="nofollow sponsored noopener" target="_blank">Yahoo!ショッピングで探す</a></div></section>
+
+      <section class="faq-block" aria-label="よくある質問"><h2>よくある質問</h2><div class="faq-item"><details open><summary>どこで買える？</summary><p class="faq-a">「ベイブレードX ストリングランチャーL」は Amazon・楽天市場・Yahoo!ショッピングなどで取り扱いを確認できます。在庫はショップごとに異なるため、上の比較ボタンから最新情報を見てください。</p></details></div><div class="faq-item"><details><summary>予約開始日・発売日は？</summary><p class="faq-a">予約開始や発売日は販路によって差が出ることがあります。商品ページの案内が最新です。</p></details></div><div class="faq-item"><details><summary>再販はある？</summary><p class="faq-a">人気商品は再販されることがありますが、時期は未定なケースが多いです。気になる場合は各ショップの入荷情報を定期的に確認してください。</p></details></div></section>
+
+      <div class="adsense-slot is-bottom" aria-label="広告枠（準備中）">AdSense Slot</div>
+
       <a class="source-link" href="https://www.amazon.co.jp/dp/B0HJ7CPXJ6?tag=djtaikutsu-22" rel="noopener sponsored nofollow" target="_blank">商品ページを見る</a>
-      <div class="shop-links"><p class="shop-links-label">各ショップで見る</p><div class="shop-btns"><a class="shop-btn btn-amazon" href="https://www.amazon.co.jp/dp/B0HJ7CPXJ6?tag=djtaikutsu-22" rel="nofollow sponsored noopener" target="_blank">Amazon</a><a class="shop-btn btn-rakuten" href="https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fsearch.rakuten.co.jp%2Fsearch%2Fmall%2F%25E3%2583%2599%25E3%2582%25A4%25E3%2583%2596%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2589X%2520BX-56%2520%25E3%2582%25B9%25E3%2583%2588%25E3%2583%25AA%25E3%2583%25B3%25E3%2582%25B0%25E3%2583%25A9%25E3%2583%25B3%25E3%2583%2581%25E3%2583%25A3%25E3%2583%25BCL%2F&amp;link_type=text&amp;id=0" rel="nofollow sponsored noopener" target="_blank">楽天市場</a><a class="shop-btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%83%99%E3%82%A4%E3%83%96%E3%83%AC%E3%83%BC%E3%83%89X%20BX-56%20%E3%82%B9%E3%83%88%E3%83%AA%E3%83%B3%E3%82%B0%E3%83%A9%E3%83%B3%E3%83%81%E3%83%A3%E3%83%BCL&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリ</a><a class="shop-btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2583%2599%25E3%2582%25A4%25E3%2583%2596%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2589X%2520BX-56%2520%25E3%2582%25B9%25E3%2583%2588%25E3%2583%25AA%25E3%2583%25B3%25E3%2582%25B0%25E3%2583%25A9%25E3%2583%25B3%25E3%2583%2581%25E3%2583%25A3%25E3%2583%25BCL" rel="nofollow sponsored noopener" target="_blank">駿河屋</a></div></div>
+      <div class="shop-links-secondary" aria-label="その他のショップ"><a class="shop-btn btn-mercari" href="https://jp.mercari.com/search?keyword=%E3%83%99%E3%82%A4%E3%83%96%E3%83%AC%E3%83%BC%E3%83%89X%20%E3%82%B9%E3%83%88%E3%83%AA%E3%83%B3%E3%82%B0%E3%83%A9%E3%83%B3%E3%83%81%E3%83%A3%E3%83%BCL&amp;status=on_sale&amp;afid=6471006721" rel="nofollow sponsored noopener" target="_blank">メルカリ</a><a class="shop-btn btn-surugaya" href="https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=5436&amp;action=default&amp;url=https%3A%2F%2Fwww.suruga-ya.jp%2Fsearch%3Fsearch_word%3D%25E3%2583%2599%25E3%2582%25A4%25E3%2583%2596%25E3%2583%25AC%25E3%2583%25BC%25E3%2583%2589X%2520%25E3%2582%25B9%25E3%2583%2588%25E3%2583%25AA%25E3%2583%25B3%25E3%2582%25B0%25E3%2583%25A9%25E3%2583%25B3%25E3%2583%2581%25E3%2583%25A3%25E3%2583%25BCL" rel="nofollow sponsored noopener" target="_blank">駿河屋</a></div>
     </article>
+
     <a class="back" href="index.html">← トップへ戻る</a>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap footer-inner">
+    <div class="wrap-narrow footer-inner">
       <div>一部の記事にはショップへのリンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
       <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシー</a></div>
       <div>&copy; 2026 Trend Pick</div>

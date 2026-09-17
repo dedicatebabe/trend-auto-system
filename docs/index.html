@@ -1,391 +1,83 @@
 <!-- ==========================================
-Version: 2.5.0
-Date: 2026-09-16
-Summary: 商品カードにサムネイル画像表示を追加
+Version: 3.0.0
+Date: 2026-09-17
+Summary: ホビー特化カテゴリと共通CSS連携のトップ刷新
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trend Pick - いまの話題・トレンドトピック</title>
-  <meta name="description" content="アニメ、ゲーム、ガジェットなど、いま話題のトピックを読みやすくまとめるトレンドメディア。">
+  <title>Trend Pick - トレンドホビー・予約速報</title>
+  <meta name="description" content="ポケモン、ガチャ、サンリオ、ベイブレード、フィギュアなど、いま熱いホビーの予約・人気情報をまとめるトレンドメディア。">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Trend Pick">
-  <meta property="og:title" content="Trend Pick - いまの話題・トレンドトピック">
+  <meta property="og:title" content="Trend Pick - トレンドホビー・予約速報">
   <meta property="og:url" content="https://dedicatebabe.github.io/trend-auto-system/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --ink: #0f1720;
-      --navy: #0b1d36;
-      --navy-mid: #163056;
-      --paper: #eef2f6;
-      --surface: #ffffff;
-      --text: #152033;
-      --muted: #5c6b7e;
-      --line: #d5dde8;
-      --accent: #1a5f9e;
-      --mint: #1f9d7a;
-      --shadow: 0 10px 28px rgba(15, 23, 32, 0.08);
-      --shadow-hover: 0 18px 40px rgba(15, 23, 32, 0.14);
-      --radius: 16px;
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      font-family: "Noto Sans JP", "Hiragino Sans", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(ellipse 80% 50% at 10% -10%, rgba(26, 95, 158, 0.08), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(31, 157, 122, 0.07), transparent 50%),
-        var(--paper);
-      line-height: 1.75;
-      letter-spacing: 0.01em;
-    }
-    a { color: inherit; text-decoration: none; }
-    .wrap { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; }
-
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 40;
-      background: rgba(255, 255, 255, 0.78);
-      border-bottom: 1px solid rgba(213, 221, 232, 0.9);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-    }
-    .header-inner {
-      min-height: 68px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-    .brand {
-      font-family: "Outfit", sans-serif;
-      font-weight: 700;
-      font-size: 1.25rem;
-      letter-spacing: -0.03em;
-      color: var(--navy);
-    }
-    .brand span { color: var(--mint); }
-    .nav {
-      display: flex;
-      gap: 1.15rem;
-      font-size: 0.88rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-    .nav a:hover { color: var(--accent); }
-
-    .hero {
-      position: relative;
-      overflow: hidden;
-      color: #fff;
-      padding: 3.2rem 0 2.4rem;
-      background:
-        radial-gradient(circle at 85% 20%, rgba(255,255,255,0.14), transparent 38%),
-        linear-gradient(125deg, #0a1628 0%, #12304f 48%, #1a4a6e 100%);
-    }
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
-      background-size: 42px 42px;
-      mask-image: linear-gradient(180deg, rgba(0,0,0,.55), transparent 85%);
-      pointer-events: none;
-    }
-    .hero .wrap { position: relative; z-index: 1; }
-    .hero-kicker {
-      display: inline-block;
-      margin: 0 0 0.85rem;
-      padding: 0.28rem 0.7rem;
-      border: 1px solid rgba(255,255,255,0.28);
-      border-radius: 999px;
-      font-size: 0.74rem;
-      letter-spacing: 0.08em;
-      font-weight: 700;
-    }
-    .hero h1 {
-      margin: 0 0 0.7rem;
-      font-family: "Outfit", "Noto Sans JP", sans-serif;
-      font-size: clamp(2rem, 5vw, 3rem);
-      line-height: 1.15;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-    }
-    .hero p {
-      margin: 0 0 1.4rem;
-      max-width: 36em;
-      color: rgba(255,255,255,0.8);
-      font-size: 1rem;
-      line-height: 1.8;
-    }
-
-    .cat-strip {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .cat-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      padding: 0.32rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      border: 1px solid transparent;
-      transition: transform 0.18s ease, background 0.18s ease;
-    }
-    .cat-chip.is-active {
-      background: rgba(255,255,255,0.16);
-      border-color: rgba(255,255,255,0.28);
-      color: #fff;
-    }
-    .cat-chip.is-active:hover {
-      transform: translateY(-1px);
-      background: rgba(255,255,255,0.24);
-    }
-    .cat-chip.is-empty {
-      background: transparent;
-      border-color: rgba(255,255,255,0.18);
-      border-style: dashed;
-      color: rgba(255,255,255,0.48);
-      font-weight: 500;
-      cursor: default;
-    }
-    .cat-chip .cat-count {
-      font-family: "Outfit", sans-serif;
-      font-size: 0.72rem;
-      opacity: 0.85;
-    }
-    .cat-chip .cat-soon {
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      opacity: 0.8;
-    }
-
-    .main { padding: 2.4rem 0 4rem; }
-    .section-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 0 0 1.1rem;
-    }
-    .section-label {
-      margin: 0;
-      font-family: "Outfit", sans-serif;
-      font-size: 0.82rem;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      font-weight: 700;
-    }
-    .section-note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.82rem;
-    }
-
-    .featured-wrap { margin-bottom: 1.8rem; }
-    .card {
-      display: block;
-      overflow: hidden;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-hover);
-      border-color: #b7c4d4;
-    }
-    .card-media {
-      aspect-ratio: 16 / 10;
-      background: #eef2f7;
-      overflow: hidden;
-      border-bottom: 1px solid var(--line);
-    }
-    .card-media img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      display: block;
-      background: #fff;
-    }
-    .card-featured .card-media {
-      aspect-ratio: 16 / 9;
-      max-height: 280px;
-    }
-    .card-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      padding: 0.95rem 1.05rem 1rem;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 0.2rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      line-height: 1.2;
-    }
-    .badge-news { background: #e8eef7; color: var(--accent); }
-    .badge-item { background: #eef2f6; color: #4a5d73; }
-    .badge-anime { background: #ece8f8; color: #5b4fb0; }
-    .badge-game { background: #e7f2fb; color: #1f6ea8; }
-    .badge-gadget { background: #eef1f5; color: #445466; }
-    .badge-goods { background: #f2f0ed; color: #6b5e52; }
-    .card h2, .card h3 {
-      margin: 0;
-      color: var(--navy);
-      font-weight: 800;
-      line-height: 1.4;
-      letter-spacing: 0.01em;
-    }
-    .card h2 { font-size: clamp(1.15rem, 2.2vw, 1.4rem); }
-    .card h3 { font-size: 0.98rem; }
-    .card-excerpt {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.55;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-    }
-    .card-date {
-      margin-top: 0.15rem;
-      color: #8091a5;
-      font-size: 0.75rem;
-      font-family: "Outfit", sans-serif;
-      letter-spacing: 0.02em;
-    }
-    .card-featured .card-body { padding: 1.15rem 1.25rem 1.2rem; gap: 0.4rem; }
-    .card-featured .card-excerpt { -webkit-line-clamp: 3; }
-
-    .latest-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.9rem;
-      align-items: start;
-    }
-    .empty {
-      grid-column: 1 / -1;
-      margin: 0;
-      padding: 1.2rem;
-      color: var(--muted);
-      background: var(--surface);
-      border: 1px dashed var(--line);
-      border-radius: 12px;
-    }
-
-    .site-footer {
-      background: var(--navy);
-      color: rgba(255,255,255,0.72);
-      font-size: 0.8rem;
-      line-height: 1.6;
-    }
-    .footer-inner {
-      padding: 1.8rem 0;
-      display: grid;
-      gap: 0.35rem;
-    }
-    .footer-inner strong {
-      color: #fff;
-      font-family: "Outfit", sans-serif;
-      font-size: 0.95rem;
-    }
-    .footer-inner a { color: #c9dbf0; text-decoration: underline; text-underline-offset: 2px; }
-    .footer-disc {
-      margin-top: 0.35rem;
-      color: rgba(255,255,255,0.55);
-      font-size: 0.74rem;
-      max-width: 52em;
-    }
-
-    @media (max-width: 960px) {
-      .latest-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 680px) {
-      .nav { display: none; }
-      .hero { padding: 2.4rem 0 2rem; }
-      .latest-grid { grid-template-columns: 1fr; }
-      .main { padding: 1.8rem 0 3.2rem; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
-      <nav class="nav" aria-label="主要ナビ">
-        <a href="#topics">注目トピック</a>
-        <a href="#latest">最新記事</a>
-        <a href="affiliate.html">表記</a>
-        <a href="privacy.html">プライバシー</a>
+      <nav class="nav header-nav-desktop" aria-label="サイトナビ">
+        <a href="#categories">カテゴリ</a>
+        <a href="#featured">注目</a>
+        <a href="#latest">最新</a>
+        <a href="affiliate.html">アフィリエイト表記</a>
       </nav>
     </div>
   </header>
 
   <section class="hero">
     <div class="wrap">
-      <div class="hero-kicker">TREND TOPICS</div>
+      <p class="hero-kicker">HOBBY / RESERVE / TREND</p>
       <h1>Trend Pick</h1>
-      <p>いま何が話題かを、短い記事で追うトレンドメディアです。アニメ・ゲーム・ガジェットなどのトピックを中心に、気になる話題だけをわかりやすくまとめます。</p>
-      <div class="cat-strip" aria-label="カテゴリ一覧">
-        <a class="cat-chip is-active" href="#latest">NEWS<span class="cat-count">4</span></a><a class="cat-chip is-active" href="#latest">アニメ<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#latest">ゲーム<span class="cat-count">3</span></a><span class="cat-chip is-empty" title="このカテゴリの記事はまだありません">ガジェット<span class="cat-soon">準備中</span></span><a class="cat-chip is-active" href="#latest">注目トピック<span class="cat-count">6</span></a><a class="cat-chip is-active" href="#latest">カルチャー<span class="cat-count">2</span></a>
+      <p>ポケモン、ガチャ、サンリオ、ベイブレード、フィギュア。熱量の高いホビー情報を、比較しやすい形でまとめています。</p>
+      <p class="aff-note" style="background:rgba(255,247,237,.92);">※本ページはアフィリエイト広告を利用しています</p>
+      <div id="categories" class="cat-strip" style="margin-top:1.1rem;" aria-label="カテゴリ">
+        <a class="cat-chip is-active" href="#latest" data-category="all">すべて<span class="cat-count">16</span></a><a class="cat-chip is-active" href="#cat-pokemon" data-category="pokemon">ポケモン<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#cat-gacha" data-category="gacha">めじるしチャーム・ガチャ<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#cat-sanrio" data-category="sanrio">サンリオ・キャラグッズ<span class="cat-count">1</span></a><a class="cat-chip is-active" href="#cat-beyblade" data-category="beyblade">ベイブレード・トレカ<span class="cat-count">6</span></a><a class="cat-chip is-active" href="#cat-figure" data-category="figure">フィギュア・ホビー<span class="cat-count">7</span></a>
       </div>
     </div>
   </section>
 
   <main class="main wrap">
-    <div class="featured-wrap" id="topics">
+    <section id="featured" class="featured-wrap" aria-label="注目記事">
       <div class="section-head">
-        <p class="section-label">TODAY'S TOPIC</p>
-        <p class="section-note">いま押さえておきたい話題</p>
+        <h2 class="section-label">FEATURED</h2>
+        <p class="section-note">いま見ておきたい1本</p>
       </div>
-      <a class="card card-featured" href="article_n_91971edcf6.html"><div class="card-media"><img src="https://m.media-amazon.com/images/I/51zpUItfErL._AC_SL1100_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-item">注目トピック</span><h2>「ベイブレードX」左回転専用ツール「BX-56 ストリングランチャーL」の特徴</h2><p class="card-excerpt">タカラトミーの「ベイブレードX」シリーズより、左回転ベイのシュートに対応した「BX-56 ストリングランチャーL」が登場しました。紐を引くことで素早くシュートできるストリングタイプのツールで、左回転ベイブレードの性能を引き出すために設計されています。従来のワインダー式とは異なる操</p><span class="card-date">2026-09-16</span></div></a>
-    </div>
+      <a class="card card-featured" href="article_n_91971edcf6.html" data-category="beyblade"><div class="card-media"><img src="https://m.media-amazon.com/images/I/51zpUItfErL._AC_SL1100_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-beyblade">ベイブレード・トレカ</span><span class="badge-status is-rise">人気急上昇</span></div><h2>「ベイブレードX」左回転専用ツール「BX-56 ストリングランチャーL」の特徴</h2><p class="card-excerpt">タカラトミーの「ベイブレードX」シリーズより、左回転ベイのシュートに対応した「BX-56 ストリングランチャーL」が登場しました。紐を引くことで素早くシュートできるストリングタイプのツールで、左回転ベイブレードの性能を引き出すために設計されています。従来のワインダー式とは異なる操</p><span class="card-date">2026-09-16</span></div></a>
+    </section>
 
-    <div class="section-head" id="latest">
-      <p class="section-label">LATEST TOPICS</p>
-      <p class="section-note">新着の話題ピックアップ</p>
-    </div>
-    <div class="latest-grid">
-      <a class="card" href="article_n_e901f34e47.html"><div class="card-media"><img src="https://m.media-amazon.com/images/I/712PbSkR+lL._AC_SL1100_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-item">注目トピック</span><h3>『ベイブレードX』ヘルズネザーデッキセットのセット内容と特徴</h3><p class="card-excerpt">タカラトミーの『ベイブレードX』シリーズより、「ヘルズネザーデッキセット」が登場しました。カスタム済みのベイブレードが複数含まれており、すぐに3on3バトルなどのデッキ対戦に対応できる構成となっています。パーツの組み合わせを調整したいプレイヤーに適した内容です。 デッキのバリエー</p><span class="card-date">2026-09-16</span></div></a>
-<a class="card" href="article_n_0865a4e4e1.html"><div class="card-media"><img src="https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3482/4571452943482.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-goods">カルチャー</span><h3>『葬送のフリーレン』フリーレンのフィギュアが登場。予約・販売情報を確認</h3><p class="card-excerpt">TVアニメ『葬送のフリーレン』より、主人公フリーレンのフィギュアが楽天市場にて取り扱い中です。作中の雰囲気を意識した落ち着いた造形となっており、衣装のなびきや杖などの小物の質感まで丁寧に表現されています。デスクや棚に飾りやすいサイズ感で、作品の世界観を手元で楽しめるアイテムです。</p><span class="card-date">2026-09-16</span></div></a>
-<a class="card" href="article_n_3834221f66.html"><div class="card-media"><img src="https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4193/4545784044193.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-goods">カルチャー</span><h3>『勝利の女神：NIKKE』よりシンデレラのフィギュアが登場、予約受付中</h3><p class="card-excerpt">スマホゲーム『勝利の女神：NIKKE』より、人気キャラクター「シンデレラ」のフィギュアが登場しました。劇中の特徴的な衣装や装飾が細部まで忠実に再現されています。作品の世界観を感じられる仕上がりで、コレクションに加えたいアイテムです。 作品のファンやキャラクターの造形美を楽しみたい</p><span class="card-date">2026-09-16</span></div></a>
-<a class="card" href="article_n_0520c14a3a.html"><div class="card-media"><img src="https://m.media-amazon.com/images/I/61xdHTs6IyL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-item">注目トピック</span><h3>サンリオ「ハローキティ オーロラ立体シール」のデザインと特徴</h3><p class="card-excerpt">サンリオの人気キャラクター「ハローキティ」をあしらった立体タイプのデコレーションシールです。光の当たり方によって色合いが変わるオーロラ加工が施されており、ぷっくりとした立体感が特徴となっています。手帳やスマートフォンケースなどの身の回りの小物を華やかに飾るのに適したアイテムです。</p><span class="card-date">2026-09-16</span></div></a>
-<a class="card" href="article_n_dc0c0e5079.html"><div class="card-media"><img src="https://m.media-amazon.com/images/I/71doHf1maOL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-item">注目トピック</span><h3>「たまごっちパラダイス White Glacier」の仕様と入荷情報</h3><p class="card-excerpt">バンダイの育成玩具シリーズより、「たまごっちパラダイス White Glacier」が登場しました。氷河をイメージしたホワイト基調のクリアカラーが特徴的なデザインです。懐かしの育成遊びと透明感のあるシェルデザインを楽しめるアイテムとなっています。 レトロな電子ペットを気軽に楽しみ</p><span class="card-date">2026-09-16</span></div></a>
-<a class="card" href="article_n_d782b92d64.html"><div class="card-media"><img src="https://m.media-amazon.com/images/I/51XbrLjTUtL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><span class="badge badge-game">ゲーム</span><h3>ONE PIECEカードゲーム ブースターパック『神の支配』の取扱情報</h3><p class="card-excerpt">バンダイの「ONE PIECEカードゲーム」より、ブースターパック第18弾「神の支配（OP-18）」が登場します。本シリーズでは作品内の様々なエピソードや人気キャラクターがカード化されており、デッキ構築やコレクションの幅を広げる内容となっています。主要ECサイトにて商品の取り扱い</p><span class="card-date">2026-09-16</span></div></a>
-    </div>
+    <section id="latest" aria-label="最新記事">
+      <div class="section-head">
+        <h2 class="section-label">LATEST</h2>
+        <p class="section-note">カテゴリ別にチェック</p>
+      </div>
+      <div class="latest-grid">
+        <a class="card" href="article_n_e901f34e47.html" data-category="beyblade"><div class="card-media"><img src="https://m.media-amazon.com/images/I/712PbSkR+lL._AC_SL1100_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-beyblade">ベイブレード・トレカ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>『ベイブレードX』ヘルズネザーデッキセットのセット内容と特徴</h3><p class="card-excerpt">タカラトミーの『ベイブレードX』シリーズより、「ヘルズネザーデッキセット」が登場しました。カスタム済みのベイブレードが複数含まれており、すぐに3on3バトルなどのデッキ対戦に対応できる構成となっています。パーツの組み合わせを調整したいプレイヤーに適した内容です。 デッキのバリエー</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_0865a4e4e1.html" data-category="figure"><div class="card-media"><img src="https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/3482/4571452943482.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-figure">フィギュア・ホビー</span><span class="badge-status is-reserve">予約受付中</span></div><h3>『葬送のフリーレン』フリーレンのフィギュアが登場。予約・販売情報を確認</h3><p class="card-excerpt">TVアニメ『葬送のフリーレン』より、主人公フリーレンのフィギュアが楽天市場にて取り扱い中です。作中の雰囲気を意識した落ち着いた造形となっており、衣装のなびきや杖などの小物の質感まで丁寧に表現されています。デスクや棚に飾りやすいサイズ感で、作品の世界観を手元で楽しめるアイテムです。</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_3834221f66.html" data-category="figure"><div class="card-media"><img src="https://thumbnail.image.rakuten.co.jp/@0_mall/book/cabinet/4193/4545784044193.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-figure">フィギュア・ホビー</span><span class="badge-status is-reserve">予約受付中</span></div><h3>『勝利の女神：NIKKE』よりシンデレラのフィギュアが登場、予約受付中</h3><p class="card-excerpt">スマホゲーム『勝利の女神：NIKKE』より、人気キャラクター「シンデレラ」のフィギュアが登場しました。劇中の特徴的な衣装や装飾が細部まで忠実に再現されています。作品の世界観を感じられる仕上がりで、コレクションに加えたいアイテムです。 作品のファンやキャラクターの造形美を楽しみたい</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_0520c14a3a.html" data-category="sanrio"><div class="card-media"><img src="https://m.media-amazon.com/images/I/61xdHTs6IyL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-sanrio">サンリオ・キャラグッズ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>サンリオ「ハローキティ オーロラ立体シール」のデザインと特徴</h3><p class="card-excerpt">サンリオの人気キャラクター「ハローキティ」をあしらった立体タイプのデコレーションシールです。光の当たり方によって色合いが変わるオーロラ加工が施されており、ぷっくりとした立体感が特徴となっています。手帳やスマートフォンケースなどの身の回りの小物を華やかに飾るのに適したアイテムです。</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_dc0c0e5079.html" data-category="gacha"><div class="card-media"><img src="https://m.media-amazon.com/images/I/71doHf1maOL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-gacha">めじるしチャーム・ガチャ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>「たまごっちパラダイス White Glacier」の仕様と入荷情報</h3><p class="card-excerpt">バンダイの育成玩具シリーズより、「たまごっちパラダイス White Glacier」が登場しました。氷河をイメージしたホワイト基調のクリアカラーが特徴的なデザインです。懐かしの育成遊びと透明感のあるシェルデザインを楽しめるアイテムとなっています。 レトロな電子ペットを気軽に楽しみ</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_d782b92d64.html" data-category="beyblade"><div class="card-media"><img src="https://m.media-amazon.com/images/I/51XbrLjTUtL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-beyblade">ベイブレード・トレカ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>ONE PIECEカードゲーム ブースターパック『神の支配』の取扱情報</h3><p class="card-excerpt">バンダイの「ONE PIECEカードゲーム」より、ブースターパック第18弾「神の支配（OP-18）」が登場します。本シリーズでは作品内の様々なエピソードや人気キャラクターがカード化されており、デッキ構築やコレクションの幅を広げる内容となっています。主要ECサイトにて商品の取り扱い</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_90b49f810e.html" data-category="beyblade"><div class="card-media"><img src="https://m.media-amazon.com/images/I/61Zy6WQ+4WL._AC_SL1100_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-beyblade">ベイブレード・トレカ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>『ベイブレードX』BX-53の製品特徴とAmazon販売情報</h3><p class="card-excerpt">タカラトミーが展開するバトルホビー「ベイブレードX」より、「BX-53」が登場しています。超加速ギミック「Xダッシュ」に対応した構成で、既存パーツと組み合わせたカスタマイズの幅を広げるアイテムです。Amazonなどの各種ECサイトにて取り扱いが開始されています。 ベイブレードXを</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_38dd7586e1.html" data-category="beyblade"><div class="card-media"><img src="https://m.media-amazon.com/images/I/81273qc-48L._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-beyblade">ベイブレード・トレカ</span><span class="badge-status is-rise">人気急上昇</span></div><h3>AWSのアーキテクチャ設計を学ぶカードゲーム『AWS BuilderCards』が登場</h3><p class="card-excerpt">Amazonから、AWSの各種サービスを学びながら遊べるデッキ構築型ボードゲーム「AWS BuilderCards」が登場しました。プレイヤーはAWSのサービスカードを組み合わせてシステムを構築し、ポイントを競います。クラウドエンジニアやIT学習者の研修ツールとしても活用できるカ</p><span class="card-date">2026-09-16</span></div></a>
+<a class="card" href="article_n_d845ae6f92.html" data-category="pokemon"><div class="card-media"><img src="https://m.media-amazon.com/images/I/715FaccxhwL._AC_SL1500_.jpg" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"></div><div class="card-body"><div class="badge-row"><span class="badge badge-pokemon">ポケモン</span><span class="badge-status is-soldout">完売注意</span></div><h3>ポケモンカードゲーム関連商品『ストームエメラルダ』のAmazon取扱状況</h3><p class="card-excerpt">ポケモンカードゲーム関連アイテム「ストームエメラルダ」のAmazonでの取り扱いが確認されています。詳しい収録内容やセット構成については、商品ページや公式発表での更新を追いたいところです。コレクションや対戦デッキの準備に向けて、事前に販売状況をチェックしておくと便利です。 ポケモ</p><span class="card-date">2026-09-16</span></div></a>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap footer-inner">
       <strong>Trend Pick</strong>
-      <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシーポリシー</a></div>
-      <div class="footer-disc">一部の記事には関連リンクが含まれることがあります。アダルトコンテンツは扱いません。</div>
+      <div><a href="affiliate.html">アフィリエイト表記</a> / <a href="privacy.html">プライバシー</a></div>
+      <div class="footer-disc">一部の記事にはアフィリエイトリンクが含まれます。価格・在庫は各ショップの最新表示を優先してください。アダルトコンテンツは扱いません。</div>
       <div>&copy; 2026 Trend Pick</div>
     </div>
   </footer>

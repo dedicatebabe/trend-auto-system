@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.3.0
+# Version: 3.0.0
 # Date: 2026-09-17
-# Summary: ショップリンクを店名テキストボタンに変更
+# Summary: ホビー特化カテゴリと記事CTA/FAQ/要約枠コンポーネント追加
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -23,36 +23,47 @@ DOCS = Path("docs")
 TEMPLATES = Path("templates")
 ENTRIES_FILE = DOCS / ".index_entries.json"
 SITE_BASE = "https://dedicatebabe.github.io/trend-auto-system"
-TOP_LIST_LIMIT = 6
+TOP_LIST_LIMIT = 9
 
 BADGE_CLASS = {
+    "すべて": "badge-all",
+    "ポケモン": "badge-pokemon",
+    "めじるしチャーム・ガチャ": "badge-gacha",
+    "サンリオ・キャラグッズ": "badge-sanrio",
+    "ベイブレード・トレカ": "badge-beyblade",
+    "フィギュア・ホビー": "badge-figure",
     "NEWS": "badge-news",
     "注目トピック": "badge-item",
-    "カルチャー": "badge-goods",
-    "アニメ": "badge-anime",
-    "ゲーム": "badge-game",
-    "ガジェット": "badge-gadget",
+    "カルチャー": "badge-figure",
+    "アニメ": "badge-figure",
+    "ゲーム": "badge-beyblade",
+    "ガジェット": "badge-item",
 }
 
-# 話題カテゴリを先に、関連トピック系は後ろに置く
 SITE_CATEGORIES = (
-    "NEWS",
-    "アニメ",
-    "ゲーム",
-    "ガジェット",
-    "注目トピック",
-    "カルチャー",
+    "すべて",
+    "ポケモン",
+    "めじるしチャーム・ガチャ",
+    "サンリオ・キャラグッズ",
+    "ベイブレード・トレカ",
+    "フィギュア・ホビー",
 )
 
-FEATURE_TOPIC_BADGES = frozenset({"NEWS", "アニメ", "ゲーム", "ガジェット", "カルチャー"})
+CONTENT_CATEGORIES = tuple(c for c in SITE_CATEGORIES if c != "すべて")
+
 LEGACY_BADGE_MAP = {
-    "商品": "注目トピック",
-    "商品ピックアップ": "注目トピック",
-    "注目アイテム": "注目トピック",
-    "トレンドグッズ": "カルチャー",
+    "商品": "フィギュア・ホビー",
+    "商品ピックアップ": "フィギュア・ホビー",
+    "注目アイテム": "フィギュア・ホビー",
+    "注目トピック": "フィギュア・ホビー",
+    "トレンドグッズ": "サンリオ・キャラグッズ",
+    "カルチャー": "フィギュア・ホビー",
+    "アニメ": "フィギュア・ホビー",
+    "ゲーム": "ベイブレード・トレカ",
+    "ガジェット": "フィギュア・ホビー",
+    "NEWS": "フィギュア・ホビー",
 }
 
-# 記事本文・抜粋から除去する断り／メタ文言
 _DISCLAIMER_PATTERNS = (
     re.compile(
         r"この記事は読み物[・･]?ニュース紹介です[。．]?.*"
@@ -76,10 +87,11 @@ class ArticleEntry:
     created_at: str
     has_product_links: bool = False
     keyword: str = ""
-    badge: str = "NEWS"
+    badge: str = "フィギュア・ホビー"
     image_seed: int = 1
     links: dict[str, str] = field(default_factory=dict)
     image_url: str = ""
+    status: str = ""
 
 
 def article_id_from_link(link: str) -> str:
@@ -96,12 +108,58 @@ def article_public_url(article_id: str, *, base: str = SITE_BASE) -> str:
     return f"{base.rstrip('/')}/{article_filename(article_id)}"
 
 
-def _badge_for(*, has_product_links: bool, badge: str | None = None) -> str:
-    if badge and badge.strip():
-        raw = badge.strip()
-        return LEGACY_BADGE_MAP.get(raw, raw)
-    # 商品リンク有無だけでカテゴリを決めない（話題メディアの体裁を優先）
-    return "NEWS"
+def infer_category(*, title: str = "", keyword: str = "", badge: str | None = None) -> str:
+    """タイトル／キーワードから新カテゴリを推定する。"""
+    text = f"{title} {keyword}"
+    if any(x in text for x in ("ポケモン", "ポケカ", "ピカチュウ", "ストームエメラルダ")):
+        return "ポケモン"
+    if any(x in text for x in ("めじるし", "ガチャ", "カプセルトイ", "ガシャポン", "ガシャ", "たまごっち")):
+        return "めじるしチャーム・ガチャ"
+    if any(
+        x in text
+        for x in ("サンリオ", "ハローキティ", "マイメロ", "シナモロール", "クロミ", "ポムポムプリン")
+    ):
+        return "サンリオ・キャラグッズ"
+    if any(
+        x in text
+        for x in (
+            "ベイブレード",
+            "トレカ",
+            "カードゲーム",
+            "ONE PIECE",
+            "ワンピカード",
+            "遊戯王",
+            "デュエマ",
+            "BuilderCards",
+        )
+    ):
+        return "ベイブレード・トレカ"
+    if any(x in text for x in ("フィギュア", "NIKKE", "フリーレン", "ホビー", "一番くじ")):
+        return "フィギュア・ホビー"
+    if badge and badge.strip() in CONTENT_CATEGORIES:
+        return badge.strip()
+    if badge and badge.strip() in LEGACY_BADGE_MAP:
+        return LEGACY_BADGE_MAP[badge.strip()]
+    return "フィギュア・ホビー"
+
+
+def infer_status(*, title: str = "", body: str = "", rank: int | None = None) -> str:
+    """アイキャッチ用ステータスを推定。"""
+    text = f"{title}\n{body}"
+    if any(x in text for x in ("完売", "欠品", "売り切れ")):
+        return "完売注意"
+    if any(x in text for x in ("予約", "受注", "予約受付")):
+        return "予約受付中"
+    if rank is not None and rank <= 3:
+        return "人気急上昇"
+    if any(x in text for x in ("人気", "急上昇", "ランキング", "注目")):
+        return "人気急上昇"
+    return "人気急上昇"
+
+
+def _badge_for(*, has_product_links: bool, badge: str | None = None, title: str = "", keyword: str = "") -> str:
+    _ = has_product_links
+    return infer_category(title=title, keyword=keyword, badge=badge)
 
 
 def _image_seed_from_id(article_id: str) -> int:
@@ -141,9 +199,13 @@ def load_entries() -> list[ArticleEntry]:
         if not aid or not filename:
             continue
         has_links = bool(row.get("has_product_links", False))
+        title = str(row.get("title", "") or aid)
+        keyword = str(row.get("keyword", "") or "")
         badge = _badge_for(
             has_product_links=has_links,
             badge=str(row.get("badge", "") or ""),
+            title=title,
+            keyword=keyword,
         )
         seed_raw = row.get("image_seed")
         try:
@@ -154,16 +216,17 @@ def load_entries() -> list[ArticleEntry]:
             ArticleEntry(
                 article_id=aid,
                 filename=filename,
-                title=str(row.get("title", "") or aid),
+                title=title,
                 excerpt=str(row.get("excerpt", "") or ""),
                 source_link=str(row.get("source_link", "") or ""),
                 created_at=str(row.get("created_at", "") or ""),
                 has_product_links=has_links,
-                keyword=str(row.get("keyword", "") or ""),
+                keyword=keyword,
                 badge=badge,
                 image_seed=seed,
                 links={str(k): str(v) for k, v in (row.get("links") or {}).items()},
                 image_url=str(row.get("image_url", "") or "").strip(),
+                status=str(row.get("status", "") or "").strip(),
             )
         )
     return entries
@@ -186,6 +249,7 @@ def save_entries(entries: list[ArticleEntry]) -> None:
                 "image_seed": e.image_seed,
                 "links": e.links,
                 "image_url": e.image_url,
+                "status": e.status,
             }
             for e in entries
         ]
@@ -197,7 +261,6 @@ def save_entries(entries: list[ArticleEntry]) -> None:
 
 
 def _sanitize_public_copy(text: str) -> str:
-    """公開文面から買い物リンク無しなどの断りを取り除く。"""
     out = (text or "").strip()
     for pat in _DISCLAIMER_PATTERNS:
         out = pat.sub("", out)
@@ -220,7 +283,6 @@ def _excerpt_from_body(text: str, *, limit: int = 140) -> str:
 
 
 def _plain_to_paragraphs(text: str) -> str:
-    """プレーンテキストを見出し・箇条書き付きHTMLに変換。"""
     cleaned = _sanitize_public_copy(text)
     if not cleaned:
         return "<p>記事本文はありません。</p>"
@@ -233,19 +295,16 @@ def _plain_to_paragraphs(text: str) -> str:
         if not lines:
             continue
 
-        # 見出し単体ブロック
         if len(lines) == 1 and lines[0].startswith("## "):
             parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
             continue
 
-        # 見出し＋続き
         if lines[0].startswith("## "):
             parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
             lines = lines[1:]
             if not lines:
                 continue
 
-        # 箇条書き
         if all(ln.startswith(("- ", "・")) for ln in lines):
             items = []
             for ln in lines:
@@ -290,7 +349,6 @@ def _product_image_html(image_url: str, *, title: str) -> str:
 
 
 def _is_usable_source_url(url: str) -> bool:
-    """デモ用・明らかに無効な出典URLは出さない。"""
     value = (url or "").strip().lower()
     if not value.startswith(("http://", "https://")):
         return False
@@ -317,6 +375,7 @@ def _source_link_html(source_link: str, *, label: str | None = None) -> str:
             "hb.afl.rakuten",
             "mercari.com",
             "suruga-ya.jp",
+            "shopping.yahoo.co.jp",
         )
     ):
         text = "商品ページを見る"
@@ -327,33 +386,145 @@ def _source_link_html(source_link: str, *, label: str | None = None) -> str:
     )
 
 
-def _product_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
+def _status_badge_html(status: str) -> str:
+    label = (status or "").strip()
+    if not label:
+        return ""
+    cls = "badge-status"
+    if label == "予約受付中":
+        cls += " is-reserve"
+    elif label == "人気急上昇":
+        cls += " is-rise"
+    elif label == "完売注意":
+        cls += " is-soldout"
+    else:
+        cls += " is-hot"
+    return f'<span class="{cls}">{html.escape(label)}</span>'
+
+
+def _summary_points_from_body(body: str) -> list[str]:
+    points: list[str] = []
+    for line in (body or "").splitlines():
+        s = line.strip()
+        if s.startswith("- "):
+            points.append(s[2:].strip())
+        if len(points) >= 3:
+            break
+    if len(points) >= 3:
+        return points[:3]
+    paras = [
+        ln.strip()
+        for ln in re.split(r"\n+", body or "")
+        if ln.strip() and not ln.strip().startswith("##") and not ln.strip().startswith("- ")
+    ]
+    for p in paras:
+        if p not in points:
+            points.append(p[:60])
+        if len(points) >= 3:
+            break
+    while len(points) < 3:
+        points.append("在庫・価格はショップごとに異なるため、購入前に最新表示を確認")
+    return points[:3]
+
+
+def _summary_box_html(body: str) -> str:
+    points = _summary_points_from_body(body)
+    items = "".join(f"<li>{html.escape(p)}</li>" for p in points)
+    return (
+        '<section class="summary-box" aria-label="この記事の注目ポイント">'
+        "<h2>この記事の注目ポイント3選</h2>"
+        f"<ol>{items}</ol>"
+        "</section>"
+    )
+
+
+def _cta_compare_html(links: dict[str, str], *, has_product_links: bool) -> str:
     if not has_product_links:
         return ""
-    items = [
-        ("amazon", "Amazon", "btn-amazon"),
-        ("rakuten", "楽天市場", "btn-rakuten"),
-        ("mercari", "メルカリ", "btn-mercari"),
-        ("surugaya", "駿河屋", "btn-surugaya"),
-    ]
+    mapping = (
+        ("amazon", "Amazonで探す", "cta-amazon"),
+        ("rakuten", "楽天市場で探す", "cta-rakuten"),
+        ("yahoo", "Yahoo!ショッピングで探す", "cta-yahoo"),
+    )
     buttons: list[str] = []
-    for key, label, cls in items:
-        url = links.get(key, "").strip()
+    for key, label, cls in mapping:
+        url = (links.get(key) or "").strip()
         if not url:
             continue
         buttons.append(
-            f'<a class="shop-btn {cls}" href="{html.escape(url, quote=True)}" '
-            f'rel="nofollow sponsored noopener" target="_blank">'
-            f"{html.escape(label)}"
-            f"</a>"
+            f'<a class="cta-btn {cls}" href="{html.escape(url, quote=True)}" '
+            f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
         )
     if not buttons:
         return ""
     return (
-        '<div class="shop-links">'
-        '<p class="shop-links-label">各ショップで見る</p>'
-        f'<div class="shop-btns">{"".join(buttons)}</div>'
+        '<section class="cta-compare" aria-label="購入先比較">'
+        "<h2>今すぐ各ショップで探す</h2>"
+        '<p class="cta-note">在庫と価格はショップごとに違います。気になる方は先に比較してください。</p>'
+        f'<div class="cta-grid">{"".join(buttons)}</div>'
+        "</section>"
+    )
+
+
+def _secondary_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
+    if not has_product_links:
+        return ""
+    items = (
+        ("mercari", "メルカリ", "btn-mercari"),
+        ("surugaya", "駿河屋", "btn-surugaya"),
+    )
+    buttons: list[str] = []
+    for key, label, cls in items:
+        url = (links.get(key) or "").strip()
+        if not url:
+            continue
+        buttons.append(
+            f'<a class="shop-btn {cls}" href="{html.escape(url, quote=True)}" '
+            f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
+        )
+    if not buttons:
+        return ""
+    return (
+        '<div class="shop-links-secondary" aria-label="その他のショップ">'
+        f"{''.join(buttons)}"
         "</div>"
+    )
+
+
+def _faq_block_html(*, title: str, keyword: str) -> str:
+    name = (keyword or title or "この商品").strip()[:40]
+    qas = [
+        (
+            "どこで買える？",
+            "「" + name + "」は Amazon・楽天市場・Yahoo!ショッピングなどで取り扱いを確認できます。"
+            "在庫はショップごとに異なるため、上の比較ボタンから最新情報を見てください。",
+        ),
+        (
+            "予約開始日・発売日は？",
+            "予約開始や発売日は販路によって差が出ることがあります。商品ページの案内が最新です。",
+        ),
+        (
+            "再販はある？",
+            "人気商品は再販されることがありますが、時期は未定なケースが多いです。"
+            "気になる場合は各ショップの入荷情報を定期的に確認してください。",
+        ),
+    ]
+    items_html: list[str] = []
+    for i, (q, a) in enumerate(qas):
+        open_attr = " open" if i == 0 else ""
+        items_html.append(
+            '<div class="faq-item">'
+            f"<details{open_attr}>"
+            f"<summary>{html.escape(q)}</summary>"
+            f'<p class="faq-a">{html.escape(a)}</p>'
+            "</details>"
+            "</div>"
+        )
+    return (
+        '<section class="faq-block" aria-label="よくある質問">'
+        "<h2>よくある質問</h2>"
+        f"{''.join(items_html)}"
+        "</section>"
     )
 
 
@@ -368,9 +539,18 @@ def render_article_page(
     canonical_url: str,
     badge: str | None = None,
     image_url: str = "",
+    keyword: str = "",
+    status: str = "",
 ) -> str:
     excerpt = _excerpt_from_body(body)
-    badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
+    badge_label = _badge_for(
+        has_product_links=has_product_links,
+        badge=badge,
+        title=title,
+        keyword=keyword,
+    )
+    status_label = status or infer_status(title=title, body=body)
+    cta = _cta_compare_html(links, has_product_links=has_product_links)
     template = _load_template("article.html")
     return _apply(
         template,
@@ -384,43 +564,61 @@ def render_article_page(
                 else ""
             ),
             "BADGE": html.escape(badge_label),
+            "BADGE_CLASS": _badge_class(badge_label),
+            "STATUS_BADGE": _status_badge_html(status_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
             "PRODUCT_IMAGE": _product_image_html(image_url, title=title),
+            "SUMMARY_BOX": _summary_box_html(body) if has_product_links else "",
+            "CTA_COMPARE": cta,
             "ARTICLE_BODY": _plain_to_paragraphs(body),
+            "FAQ_BLOCK": _faq_block_html(title=title, keyword=keyword) if has_product_links else "",
             "SOURCE_LINK": _source_link_html(source_link),
-            "PRODUCT_LINKS": _product_links_html(
-                links, has_product_links=has_product_links
-            ),
+            "SECONDARY_LINKS": _secondary_links_html(links, has_product_links=has_product_links),
             "YEAR": str(datetime.now(timezone.utc).year),
         },
     )
 
 
 def _badge_class(badge: str) -> str:
-    return BADGE_CLASS.get(badge, "badge-news")
+    return BADGE_CLASS.get(badge, "badge-figure")
 
 
 def _pick_featured(entries: list[ArticleEntry]) -> ArticleEntry:
-    """
-    注目枠用に1本選ぶ。
-
-    アフィリ収益優先のため、商品リンクありを先に、なければ最新話題。
-    """
     product_first = [e for e in entries if e.has_product_links]
     pool = product_first or list(entries)
     return sorted(pool, key=lambda e: e.created_at, reverse=True)[0]
 
 
+def _category_slug(name: str) -> str:
+    mapping = {
+        "すべて": "all",
+        "ポケモン": "pokemon",
+        "めじるしチャーム・ガチャ": "gacha",
+        "サンリオ・キャラグッズ": "sanrio",
+        "ベイブレード・トレカ": "beyblade",
+        "フィギュア・ホビー": "figure",
+    }
+    return mapping.get(name, "all")
+
+
 def _render_category_strip(entries: list[ArticleEntry]) -> str:
-    """記事ありは件数付きchip、ゼロ件は破線の「準備中」chip。"""
-    counts = Counter(e.badge for e in entries)
+    counts = Counter(e.badge for e in entries if e.badge in CONTENT_CATEGORIES)
     chips: list[str] = []
     for name in SITE_CATEGORIES:
-        count = counts.get(name, 0)
+        slug = _category_slug(name)
         label = html.escape(name)
+        if name == "すべて":
+            chips.append(
+                f'<a class="cat-chip is-active" href="#latest" data-category="all">'
+                f"{label}"
+                f'<span class="cat-count">{len(entries)}</span>'
+                f"</a>"
+            )
+            continue
+        count = counts.get(name, 0)
         if count > 0:
             chips.append(
-                f'<a class="cat-chip is-active" href="#latest">'
+                f'<a class="cat-chip is-active" href="#cat-{slug}" data-category="{slug}">'
                 f"{label}"
                 f'<span class="cat-count">{count}</span>'
                 f"</a>"
@@ -444,6 +642,7 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
     badge = html.escape(entry.badge)
     badge_cls = _badge_class(entry.badge)
     href = html.escape(entry.filename)
+    slug = _category_slug(entry.badge)
     media = ""
     if (entry.image_url or "").startswith(("http://", "https://")):
         media = (
@@ -452,11 +651,12 @@ def _render_card(entry: ArticleEntry, *, featured: bool = False) -> str:
             f'alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">'
             f"</div>"
         )
+    status = _status_badge_html(entry.status) if entry.status else ""
     return (
-        f'<a class="{cls}" href="{href}">'
+        f'<a class="{cls}" href="{href}" data-category="{slug}">'
         f"{media}"
         f'<div class="card-body">'
-        f'<span class="badge {badge_cls}">{badge}</span>'
+        f'<div class="badge-row"><span class="badge {badge_cls}">{badge}</span>{status}</div>'
         f"<{title_tag}>{title}</{title_tag}>"
         f'<p class="card-excerpt">{excerpt}</p>'
         f'<span class="card-date">{date}</span>'
@@ -480,9 +680,7 @@ def render_index_page(entries: list[ArticleEntry]) -> str:
     else:
         top = _pick_featured(sorted_entries)
         featured = _render_card(top, featured=True)
-        rest = [e for e in sorted_entries if e.article_id != top.article_id][
-            :TOP_LIST_LIMIT
-        ]
+        rest = [e for e in sorted_entries if e.article_id != top.article_id][:TOP_LIST_LIMIT]
         latest = "\n".join(_render_card(e) for e in rest) or (
             '<p class="empty">追加の記事はまだありません。</p>'
         )
@@ -509,6 +707,7 @@ def publish_article(
     badge: str | None = None,
     image_seed: int | None = None,
     image_url: str = "",
+    status: str = "",
 ) -> ArticleEntry:
     """個別記事を書き、entries と index を更新する。"""
     DOCS.mkdir(parents=True, exist_ok=True)
@@ -517,9 +716,15 @@ def publish_article(
     stamp = created_at or datetime.now(timezone.utc).isoformat()
     body = _sanitize_public_copy(body)
     excerpt = _excerpt_from_body(body)
-    badge_label = _badge_for(has_product_links=has_product_links, badge=badge)
+    badge_label = _badge_for(
+        has_product_links=has_product_links,
+        badge=badge,
+        title=title,
+        keyword=keyword,
+    )
     seed = image_seed if image_seed is not None else _image_seed_from_id(aid)
     image = (image_url or "").strip()
+    status_label = status or infer_status(title=title, body=body)
     entry = ArticleEntry(
         article_id=aid,
         filename=filename,
@@ -533,6 +738,7 @@ def publish_article(
         image_seed=seed,
         links=links or {},
         image_url=image,
+        status=status_label,
     )
 
     page = render_article_page(
@@ -545,6 +751,8 @@ def publish_article(
         canonical_url=article_public_url(aid),
         badge=badge_label,
         image_url=image,
+        keyword=keyword,
+        status=status_label,
     )
     (DOCS / filename).write_text(page, encoding="utf-8")
     logger.info("個別記事を出力: %s", filename)
@@ -565,11 +773,6 @@ def _is_demo_source(url: str) -> bool:
 
 
 def purge_demo_entries() -> list[ArticleEntry]:
-    """
-    ダミー記事を削除し、実記事だけ残して index を再生成する。
-
-    ダミーは自動では消えないため、明示的に掃除して使う。
-    """
     entries = load_entries()
     kept: list[ArticleEntry] = []
     removed = 0
@@ -596,7 +799,6 @@ _BAD_TITLE_MARKERS = (
 
 
 def is_bad_product_article(entry: ArticleEntry) -> bool:
-    """人間が読めない商品紹介記事か。"""
     title = entry.title or ""
     excerpt = entry.excerpt or ""
     blob = f"{title}\n{excerpt}"
@@ -604,14 +806,12 @@ def is_bad_product_article(entry: ArticleEntry) -> bool:
         return True
     if re.search(r"（楽天）\s*\d{5,}", blob):
         return True
-    # タイトルがほぼ "Amazon" だけ
     if re.search(r"人気商品「Amazon」", title):
         return True
     return False
 
 
 def purge_bad_product_entries() -> list[ArticleEntry]:
-    """管理番号・スラッグ名など読めない商品記事を削除して index 再生成。"""
     entries = load_entries()
     kept: list[ArticleEntry] = []
     removed = 0
@@ -631,10 +831,5 @@ def purge_bad_product_entries() -> list[ArticleEntry]:
 
 
 def ensure_demo_volume(min_total: int = 7) -> list[ArticleEntry]:
-    """
-    互換のためのスタブ。
-
-    ダミー補充は行わず、既存ダミーを削除して実記事のみにする。
-    """
     _ = min_total
     return purge_demo_entries()

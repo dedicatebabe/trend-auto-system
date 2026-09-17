@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.1.0
-# Date: 2026-09-16
-# Summary: 主商品直URL＋他店は商品名検索アフィを組み合わせる
+# Version: 2.2.0
+# Date: 2026-09-17
+# Summary: Yahoo!ショッピング検索リンクを追加しCTA用3店を整備
 # ==========================================
 """キーワード／商品ページから各ショップのアフィリエイトURLを組み立てる。"""
 
@@ -54,12 +54,7 @@ def generate_amazon_url(keyword: str, *, tag: str | None = None) -> str:
 
 
 def generate_rakuten_url(keyword: str, *, af_id: str | None = None) -> str:
-    """
-    楽天市場検索のアフィリエイトURL。
-
-    形式例:
-    https://hb.afl.rakuten.co.jp/ichiba/{RAKUTEN_AF_ID}/?pc={urlencoded search url}
-    """
+    """楽天市場検索のアフィリエイトURL。"""
     rid = (af_id if af_id is not None else os.getenv("RAKUTEN_AF_ID", "")).strip()
     if not rid:
         raise RuntimeError("環境変数 RAKUTEN_AF_ID が設定されていません。")
@@ -72,17 +67,32 @@ def generate_rakuten_url(keyword: str, *, af_id: str | None = None) -> str:
     )
 
 
+def generate_yahoo_url(keyword: str, *, sid: str | None = None) -> str:
+    """
+    Yahoo!ショッピング検索URL。
+
+    YAHOO_SHOPPING_SID があれば vc_sid 付き、なければ通常検索。
+    """
+    encoded = quote(keyword.strip(), safe="")
+    base = f"https://shopping.yahoo.co.jp/search?p={encoded}"
+    sid_value = (sid if sid is not None else os.getenv("YAHOO_SHOPPING_SID", "")).strip()
+    if sid_value:
+        return f"{base}&sc_i={quote(sid_value, safe='')}"
+    return base
+
+
 def generate_affiliate_urls(keyword: str) -> dict[str, str]:
     """
     商品名検索向けリンク一式を返す。
 
-    戻り値キー: amazon, rakuten, mercari, surugaya
+    戻り値キー: amazon, rakuten, yahoo, mercari, surugaya
     """
     if not keyword or not keyword.strip():
         raise ValueError("keyword が空です。")
     return {
         "amazon": generate_amazon_url(keyword),
         "rakuten": generate_rakuten_url(keyword),
+        "yahoo": generate_yahoo_url(keyword),
         "mercari": generate_mercari_url(keyword),
         "surugaya": generate_surugaya_url(keyword),
     }
@@ -109,7 +119,7 @@ def build_cross_shop_links(
     """
     主ショップは商品直URL、他ショップは商品名検索アフィ。
 
-    例: Amazon商品なら amazon=直URL、楽天/メルカリ/駿河屋=商品名検索
+    例: Amazon商品なら amazon=直URL、楽天/Yahoo/メルカリ/駿河屋=商品名検索
     """
     keyword = clean_search_keyword(product_name)
     if not keyword:
