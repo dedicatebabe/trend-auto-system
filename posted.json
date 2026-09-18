@@ -658,6 +658,72 @@
       "tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-18T00:11:22.599873+00:00"
+    },
+    {
+      "product_id": "amazon:B0HHM71WPC",
+      "source": "amazon",
+      "title": "503:サービスが利用できませんService Unavailable Error",
+      "url": "https://www.amazon.co.jp/dp/B0HHM71WPC?tag=djtaikutsu-22",
+      "article_id": "n_dbde748bcd",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_dbde748bcd.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:10:52.048475+00:00"
+    },
+    {
+      "product_id": "amazon:B0H8DLYGQZ",
+      "source": "amazon",
+      "title": "サンリオ(SANRIO) 金箔ぷっくりシール シナモロール 対象年齢3才以上 226297",
+      "url": "https://www.amazon.co.jp/dp/B0H8DLYGQZ?tag=djtaikutsu-22",
+      "article_id": "n_1ea3de4682",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_1ea3de4682.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:11:00.339742+00:00"
+    },
+    {
+      "product_id": "amazon:B0HC24HFBM",
+      "source": "amazon",
+      "title": "[BANDAI] [バンダイ 仮面ライダーマイス 初回生産限定 変身ベルト DXマイスドライバー スペシャルなりきりセット 対象年齢 3 才以上",
+      "url": "https://www.amazon.co.jp/dp/B0HC24HFBM?tag=djtaikutsu-22",
+      "article_id": "n_0a151655e6",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_0a151655e6.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:11:09.422742+00:00"
+    },
+    {
+      "product_id": "amazon:B0HC1CX9ZT",
+      "source": "amazon",
+      "title": "[BANDAI] [バンダイ 仮面ライダーマイス DXバイトボーンバックル＆ライドエグズ6セット 対象年齢 3 才以上",
+      "url": "https://www.amazon.co.jp/dp/B0HC1CX9ZT?tag=djtaikutsu-22",
+      "article_id": "n_f42be25338",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_f42be25338.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:11:16.336769+00:00"
+    },
+    {
+      "product_id": "amazon:B07V4Q2MG2",
+      "source": "amazon",
+      "title": "アークライト ito (イト) (2-10人用 30分 8才以上向け) ボードゲーム",
+      "url": "https://www.amazon.co.jp/dp/B07V4Q2MG2?tag=djtaikutsu-22",
+      "article_id": "n_8d9b077d00",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_8d9b077d00.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:11:24.164839+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/uriurishop/4902370553024/",
+      "source": "rakuten",
+      "title": "【新品】Nintendo Switch 2 日本語・国内専用 BEE-S-KB6CA",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/579d57e4.d51cd78d.579d57e5.90760aad/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Furiurishop%2F4902370553024%2F&link_type=text&id=0",
+      "article_id": "n_788e39b261",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_788e39b261.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-18T06:11:31.387866+00:00"
     }
   ]
 }
