@@ -1,7 +1,7 @@
 /* ==========================================
- * Version: 1.0.0
- * Date: 2026-09-17
- * Summary: Trend Pick メディア刷新用の共通スタイル
+ * Version: 2.0.0
+ * Date: 2026-09-20
+ * Summary: ショップリンク統一、AdSense/要約/FAQスタイル整理
  * ========================================== */
 
 :root {
@@ -403,61 +403,13 @@ a { color: inherit; text-decoration: none; }
   background: #fff;
 }
 
-.summary-box {
-  margin: 0 0 1.2rem;
-  padding: 1rem 1rem 1.05rem;
-  border-radius: 12px;
-  border: 1px solid #c7d7ea;
-  background: linear-gradient(180deg, #f7fafc 0%, #eef5fb 100%);
-}
-.summary-box h2 {
-  margin: 0 0 0.55rem;
-  font-size: 0.92rem;
-  color: var(--navy);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-.summary-box ol {
-  margin: 0;
-  padding: 0 0 0 1.15rem;
-}
-.summary-box li {
-  margin: 0.28rem 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-.adsense-slot {
-  margin: 1rem 0 1.25rem;
-  min-height: 100px;
-  border: 1px dashed #c5d0de;
-  border-radius: 10px;
-  background: repeating-linear-gradient(
-    -45deg,
-    #f8fafc,
-    #f8fafc 10px,
-    #f1f5f9 10px,
-    #f1f5f9 20px
-  );
-  display: grid;
-  place-items: center;
-  color: #94a3b8;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-.adsense-slot.is-bottom { min-height: 120px; }
-
 .content p { margin: 0.55rem 0 0.95rem; font-size: 1rem; line-height: 1.75; }
 .content .lead {
-  font-size: 1.02rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--navy);
-  line-height: 1.75;
-  margin: 0 0 1.1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--line);
+  line-height: 1.8;
+  margin: 0 0 1.05rem;
 }
 .content h2 {
   margin: 1.35rem 0 0.45rem;
@@ -475,77 +427,48 @@ a { color: inherit; text-decoration: none; }
 }
 .content li { margin: 0.28rem 0; }
 
-/* Multi EC CTA */
-.cta-compare {
-  margin: 1.35rem 0;
-  padding: 1.05rem;
-  border-radius: 14px;
-  border: 2px solid #cbd5e1;
-  background: #f8fafc;
+/* Unified shop links */
+.shop-panel {
+  margin: 1.5rem 0 0.2rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--line);
 }
-.cta-compare h2 {
-  margin: 0 0 0.35rem;
-  font-size: 1.05rem;
-  color: var(--navy);
-  font-weight: 900;
-}
-.cta-compare .cta-note {
-  margin: 0 0 0.85rem;
+.shop-panel-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  font-size: 0.86rem;
-  line-height: 1.55;
+  text-transform: none;
 }
-.cta-grid {
+.shop-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
 }
-.cta-btn {
+.shop-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 0.75rem 1rem;
+  min-height: 46px;
+  padding: 0.65rem 0.75rem;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #fff !important;
   text-align: center;
-  box-shadow: 0 6px 16px rgba(15, 23, 32, 0.12);
-  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
-.cta-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.04);
-  box-shadow: 0 10px 22px rgba(15, 23, 32, 0.16);
+.shop-link:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
-.cta-btn:active { transform: translateY(0); }
-.cta-amazon { background: var(--amazon); color: #111 !important; }
-.cta-rakuten { background: var(--rakuten); }
-.cta-yahoo { background: var(--yahoo); }
-
-.shop-links-secondary {
-  margin-top: 0.85rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-.shop-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  color: #fff !important;
-  font-size: 0.86rem;
-  font-weight: 700;
-}
-.btn-mercari { background: var(--mercari); }
-.btn-surugaya { background: var(--surugaya); }
-.btn-amazon { background: var(--amazon); color: #111 !important; }
-.btn-rakuten { background: var(--rakuten); }
+.shop-amazon { background: var(--amazon); color: #111 !important; }
+.shop-rakuten { background: var(--rakuten); }
+.shop-yahoo { background: var(--yahoo); }
+.shop-mercari { background: var(--mercari); }
+.shop-surugaya { background: var(--surugaya); }
 
 .source-link {
   display: inline-block;
@@ -553,61 +476,6 @@ a { color: inherit; text-decoration: none; }
   color: var(--accent);
   font-weight: 700;
   border-bottom: 2px solid #9ec0e8;
-}
-
-/* FAQ */
-.faq-block {
-  margin: 1.4rem 0 0.4rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #fff;
-}
-.faq-block h2 {
-  margin: 0;
-  padding: 0.85rem 1rem;
-  background: #f1f5f9;
-  border-bottom: 1px solid var(--line);
-  font-size: 0.98rem;
-  color: var(--navy);
-  font-weight: 900;
-}
-.faq-item {
-  border-bottom: 1px solid var(--line);
-}
-.faq-item:last-child { border-bottom: 0; }
-.faq-item details {
-  padding: 0;
-}
-.faq-item summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 0.9rem 1rem;
-  font-weight: 800;
-  color: var(--navy);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  position: relative;
-  padding-right: 2.2rem;
-}
-.faq-item summary::-webkit-details-marker { display: none; }
-.faq-item summary::after {
-  content: "+";
-  position: absolute;
-  right: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--accent);
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-.faq-item details[open] summary::after { content: "−"; }
-.faq-item .faq-a {
-  margin: 0;
-  padding: 0 1rem 1rem;
-  color: var(--text);
-  font-size: 0.95rem;
-  line-height: 1.7;
 }
 
 .back {
@@ -620,7 +488,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 @media (min-width: 720px) {
-  .cta-grid { grid-template-columns: repeat(3, 1fr); }
+  .shop-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .article { padding: 1.45rem 1.35rem 1.7rem; }
 }
 
@@ -633,5 +501,5 @@ a { color: inherit; text-decoration: none; }
   .hero { padding: 2rem 0 1.6rem; }
   .latest-grid { grid-template-columns: 1fr; }
   .main { padding: 1.6rem 0 3rem; }
-  .cta-btn { font-size: 0.98rem; }
+  .shop-link { font-size: 0.88rem; }
 }

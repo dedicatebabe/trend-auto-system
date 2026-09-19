@@ -1,11 +1,11 @@
 # ==========================================
-# Version: 4.2.0
-# Date: 2026-09-16
-# Summary: 商品画像付きで記事公開するよう更新
+# Version: 5.0.0
+# Date: 2026-09-20
+# Summary: Xスレッド投稿（本投稿＋リプに記事URL）に変更
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
-商品ページ直URL付き記事を生成して index 更新 → X 投稿。
+商品ページ直URL付き記事を生成して index 更新 → X スレッド投稿。
 
 件数ルール:
 - 各ショップの上位 RANKING_POOL(20) を見る
@@ -19,6 +19,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -81,20 +82,18 @@ def require_env(name: str) -> str:
     return value
 
 
-def post_to_x(text: str) -> str:
+def _x_client():
     import tweepy
-    from tweepy.errors import HTTPException
 
-    client = tweepy.Client(
+    return tweepy.Client(
         consumer_key=require_env("X_API_KEY"),
         consumer_secret=require_env("X_API_SECRET"),
         access_token=require_env("X_ACCESS_TOKEN"),
         access_token_secret=require_env("X_ACCESS_SECRET"),
     )
-    try:
-        response = client.create_tweet(text=text)
-    except HTTPException as exc:
-        raise RuntimeError(f"X API error: {exc}") from exc
+
+
+def _tweet_id_from_response(response: object) -> str:
     tweet_id = ""
     if response and getattr(response, "data", None):
         tweet_id = str(response.data.get("id", ""))
@@ -103,11 +102,44 @@ def post_to_x(text: str) -> str:
     return tweet_id
 
 
-def build_tweet(base: str, *, article_url: str) -> str:
+def post_thread_to_x(*, main_text: str, reply_text: str) -> tuple[str, str]:
+    """本投稿→リプライの2連投。戻り値は (本投稿ID, リプライID)。"""
+    from tweepy.errors import HTTPException
+
+    client = _x_client()
+    try:
+        main_res = client.create_tweet(text=main_text)
+        main_id = _tweet_id_from_response(main_res)
+        reply_res = client.create_tweet(
+            text=reply_text,
+            in_reply_to_tweet_id=main_id,
+        )
+        reply_id = _tweet_id_from_response(reply_res)
+    except HTTPException as exc:
+        raise RuntimeError(f"X API error: {exc}") from exc
+    return main_id, reply_id
+
+
+def build_main_tweet(base: str) -> str:
+    """本投稿。URLは入れない。"""
     body = (base or "").strip()
-    if article_url and article_url not in body:
-        body = f"{body}\n{article_url}".strip()
-    return body[:280]
+    body = re_strip_urls(body)
+    return body[:270]
+
+
+def build_reply_tweet(*, article_url: str) -> str:
+    """リプライ。記事URLのみ。"""
+    url = (article_url or "").strip()
+    if not url:
+        return "探したリンクは記事にまとめてあります。"
+    return f"探したリンクまとめ↓\n{url}"[:280]
+
+
+def re_strip_urls(text: str) -> str:
+    cleaned = re.sub(r"https?://\S+", "", text or "")
+    cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def _extract_rakuten_item_url(url: str) -> str:
@@ -171,7 +203,6 @@ def main() -> int:
             for p in history
             if str(p.get("product_id", "")).strip()
         }
-        # 既存記事の商品URLもスキップ
         for entry in load_entries():
             src = (entry.source_link or "").strip()
             if "/dp/" in src:
@@ -237,23 +268,32 @@ def main() -> int:
                 image_url=getattr(product, "image_url", "") or "",
             )
             article_url = article_public_url(entry.article_id)
-            final_tweet = build_tweet(
-                str(analyzed["tweet_text"]), article_url=article_url
+            main_tweet = build_main_tweet(str(analyzed["tweet_text"]))
+            reply_tweet = build_reply_tweet(article_url=article_url)
+            logger.info(
+                "article=%s source=%s links=%s",
+                article_url,
+                product.source,
+                list(links),
             )
-            logger.info("article=%s source=%s links=%s", article_url, product.source, list(links))
 
             if args.dry_run:
-                logger.info("dry-run tweet:\n%s", final_tweet)
+                logger.info("dry-run main tweet:\n%s", main_tweet)
+                logger.info("dry-run reply tweet:\n%s", reply_tweet)
                 published += 1
                 continue
 
             tweet_id = ""
+            reply_tweet_id = ""
             x_error = ""
             if args.skip_x:
                 logger.warning("--skip-x のため X 投稿をスキップ")
             else:
                 try:
-                    tweet_id = post_to_x(final_tweet)
+                    tweet_id, reply_tweet_id = post_thread_to_x(
+                        main_text=main_tweet,
+                        reply_text=reply_tweet,
+                    )
                 except Exception as exc:  # noqa: BLE001
                     x_error = str(exc)
                     logger.error("X 投稿失敗（記事反映は継続）: %s", exc)
@@ -267,11 +307,11 @@ def main() -> int:
                     "article_id": entry.article_id,
                     "article_url": article_url,
                     "tweet_id": tweet_id,
+                    "reply_tweet_id": reply_tweet_id,
                     "x_error": x_error,
                     "posted_at": datetime.now(timezone.utc).isoformat(),
                 }
             )
-            # 重複防止のため都度保存
             save_posted(posted_path, history[-300:])
             published += 1
 

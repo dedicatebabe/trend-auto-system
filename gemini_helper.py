@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 3.4.0
-# Date: 2026-09-17
-# Summary: 本文見出しを自然な日本語（ポイント／向き不向き／注意点）に変更
+# Version: 4.0.0
+# Date: 2026-09-20
+# Summary: たいち人格の掘り出しメモ調に本文・X投稿を刷新
 # ==========================================
 """Gemini API によるニュース／商品解析ヘルパー。"""
 
@@ -19,60 +19,61 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "gemini-3.6-flash"
 
-SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー・ガジェットのトレンド編集者です。
+SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビーのトレンドを追うメモ書きです。
 入力されたプレスリリース／ニュースを読み、次の JSON オブジェクトだけを出力してください。
 アダルト・性的・過激な内容は禁止。一般向け（全年齢）のみ。
-体裁は「いまの話題紹介」が主。購入誘導・ショップ検索誘導はしない。
+体裁は「話題を拾ったメモ」。購入誘導・ショップ検索誘導はしない。
 
 必須キー:
-- has_product_links: 常に false（このパイプラインでは商品ページ直リンクを扱わない）
+- has_product_links: 常に false
 - keyword: 話題の短い語（作品名・イベント名・固有名詞）
 - article_title: Web記事用の落ち着いた日本語タイトル。買う／購入／相場などの販売色は出さない
-- article_body: 見どころ文章。プレーンテキストのみ（HTML禁止）。200〜400字。
-  話題の背景とポイントを中心に書く。購入誘導やメタ説明は禁止。
-- tweet_text: X投稿。事実ベースの誘導。100文字前後
+- article_body: 見どころ文章。プレーンテキストのみ（HTML禁止・##見出し禁止）。280〜450字。
+- tweet_text: X本投稿。URLなし。80〜120字。事実ベース
 
 出力は JSON のみ。
 """
 
-PRODUCT_SYSTEM_PROMPT = """あなたは日本のアニメ・ゲーム・ホビー系ウェブメディアの編集者です。
-母語話者が書く普通の商品記事として書いてください。翻訳調・マーケ用語・AIっぽい言い回しは禁止。
+PRODUCT_SYSTEM_PROMPT = """あなたは X アカウント「たいち＠アニメ・ホビー掘り出し物メモ」の編集者です。
+アニメ化やトレンドニュースを見たら、すぐ原作コミックやグッズを探しにいく人のメモとして書いてください。
+読者は「全巻一気読みしたい人」「フィギュアやグッズを探している人」。
 アダルト・性的・過激な内容は禁止。一般向けのみ。
 嘘のスペック、架空の口コミは禁止。値段や在庫は変動しうる前提で書く。
 
+人格・トーン:
+- 自分用の掘り出しメモを公開している感じ
+- 「気になったので探してみた」「参考になれば」くらいの距離感
+- カタログ説明・通販レビュー・マーケコピーにしない
+- 翻訳調・AIっぽい感嘆・煽りは禁止
+
 タイトルのルール:
-- 落ち着いた日本語の見出し。商品名や作品名を自然に入れる
+- 作品名・商品名を自然に入れる落ち着いた日本語
 - 禁止: すぎる / やばい / 最高 / 胸熱 / 一目惚れ / 止まらない / グッとくる / 待望の / 絶対に / 激アツ / 刺さる / ！の連打
-- 「感情フック＋商品名！」の定型は禁止
-- 「〜を整理」「〜まとめ」の連発も避け、記事ごとに言い方を変える
-- 良い例: 「『葬送のフリーレン』フリーレンの1/7フィギュア、再販情報」
-- 良い例: 「ベイブレードX BX-56 ストリングランチャーLをチェック」
-- 良い例: 「ONE PIECEカードゲーム『神の支配』BOXの予約状況」
-- 28〜40字前後
+- 「〜を整理」「〜まとめ」「〜の特徴」「向き不向き」の連発も避ける
+- 良い例: 「アニメ化が気になった人向け。原作と関連グッズの探しメモ」
+- 良い例: 「『葬送のフリーレン』1/7フィギュア、再販を拾ってみた」
+- 良い例: 「ONE PIECEカード『神の支配』BOX、予約状況のメモ」
+- 28〜42字前後
 
 本文のルール:
-- 自然な書き言葉。宣伝コピー禁止
-- 禁止見出し・禁止語: 刺さる人 / ひとこと注意 / 一言注意 / 向いている人 / 購入前の確認 / 見どころ（見出しとしては使わない）
-- 「ご紹介です」「チェックしてください」だけの薄い文は禁止
-- 次の形式のプレーンテキスト（見出しは必ずこの3つ。文言変更禁止）:
+- プレーンテキストのみ（HTML禁止）
+- ## 見出しは禁止（ポイント／向き不向き／注意点／見どころなども使わない）
+- 箇条書き（「- 」）も原則禁止。2〜4段落の読み物にする
+- 1段落: 何を拾ったか・なぜメモしたか（トレンド／予約／掘り出しなど）
+- 2段落: どんな人の参考になるか、探すときの観点（原作一気読み／フィギュア探しなど）
+- 3段落: ショップで在庫・価格が違うので比較して、という短い補足
+- 薄い紹介文は禁止。固有名詞を入れ、320〜520字
 
-1段落目（見出しなし）: 導入。何の商品かを2〜4文で淡々と。
-
-## ポイント
-箇条書き3点（各行は「- 」で始める）。
-
-## 向き不向き
-誰に合いそうかを1〜2文。押し売りしない。
-
-## 注意点
-在庫・価格・仕様の変動など、短く1〜2文。
-
-全体で260〜400字。
+tweet_text のルール:
+- Xの本投稿用。URLは絶対に書かない（リンクは別投稿）
+- 80〜120字。掘り出しメモの口調。煽らない
+- 「詳細はこちら」「リンクはプロフ」などの誘導定型は不要
+- 良い例: 「アニメ化ニュース見て原作とグッズ探してた。一気読みしたい人向けにメモった」
 
 必須キー:
 - article_title
 - article_body
-- tweet_text: X投稿。80〜110字。煽らない
+- tweet_text
 - keyword: 短い検索語
 
 出力は JSON のみ。
@@ -95,15 +96,18 @@ _AI_TITLE_NG = (
     "刺さる",
 )
 
-_HEADING_FIXES = (
-    ("## 刺さる人", "## 向き不向き"),
-    ("## ひとこと注意", "## 注意点"),
-    ("## 一言注意", "## 注意点"),
-    ("## 向いている人", "## 向き不向き"),
-    ("## 購入前の確認", "## 注意点"),
-    ("## 見るべきところ", "## ポイント"),
-    ("## 見どころ", "## ポイント"),
-    ("## こんな人向け", "## 向き不向き"),
+_STRIP_HEADINGS = (
+    "ポイント",
+    "向き不向き",
+    "注意点",
+    "見どころ",
+    "刺さる人",
+    "ひとこと注意",
+    "一言注意",
+    "向いている人",
+    "購入前の確認",
+    "見るべきところ",
+    "こんな人向け",
 )
 
 
@@ -124,11 +128,42 @@ def _title_looks_ai(title: str) -> bool:
 
 
 def _normalize_article_body(body: str) -> str:
-    """不自然な見出しを日本語として自然な見出しに置換する。"""
-    out = (body or "").strip()
-    for old, new in _HEADING_FIXES:
-        out = out.replace(old, new)
-    return out
+    """見出し・箇条書きを剥がし、メモ調の段落文に近づける。"""
+    raw = (body or "").strip()
+    if not raw:
+        return ""
+    paragraphs: list[str] = []
+    buffer: list[str] = []
+
+    def flush() -> None:
+        nonlocal buffer
+        if not buffer:
+            return
+        text = " ".join(buffer).strip()
+        if text:
+            paragraphs.append(text)
+        buffer = []
+
+    for line in raw.splitlines():
+        s = line.strip()
+        if not s:
+            flush()
+            continue
+        if s.startswith("## "):
+            flush()
+            heading = s[3:].strip()
+            if heading in _STRIP_HEADINGS:
+                continue
+            buffer.append(heading + "。")
+            continue
+        if s.startswith(("- ", "・")):
+            item = s[2:].strip() if s.startswith("- ") else s[1:].strip()
+            if item:
+                buffer.append(item + "。")
+            continue
+        buffer.append(s)
+    flush()
+    return "\n\n".join(paragraphs).strip()
 
 
 def _create_client(api_key: str | None = None) -> Any:
@@ -192,17 +227,13 @@ def _fallback_result(news: NewsItem) -> dict[str, Any]:
     keyword = re.sub(r"[【】「」\[\]（）()『』]", " ", short_title)
     keyword = re.sub(r"\s+", " ", keyword).strip()[:24] or "アニメ グッズ"
     has_links = _infer_has_product_links(news)
+    summary = (news.summary or "話題のリリースです。")[:280]
     body = (
         f"{news.title}\n\n"
-        f"{(news.summary or '話題のリリースです。')[:280]}\n\n"
+        f"{summary}\n\n"
+        "気になった人向けに、ひとまず話題のポイントだけメモしておく。"
     )
-    if has_links:
-        body += "気になるアイテムは各ショップで在庫・価格を比較してみてください。"
-    else:
-        body += "まずは元の発表内容を確認するのがおすすめです。"
-    tweet = (
-        f"「{short_title}」のポイントをまとめました。詳細はこちら。"
-    )
+    tweet = f"「{short_title}」が気になったのでメモ。原作や関連を追いたい人の参考に。"
     return {
         "has_product_links": has_links,
         "keyword": keyword,
@@ -220,20 +251,16 @@ def _fallback_product_result(product: Any) -> dict[str, Any]:
     price_txt = f"{price:,}円前後" if isinstance(price, int) and price > 0 else "価格は商品ページで要確認"
     short = title[:36]
     body = (
-        f"「{title}」が{shop}で扱われている。気になる人向けに、ポイントだけ短くまとめる。\n\n"
-        f"## ポイント\n"
-        f"- 見た目・付属・サイズ感が自分のイメージと合うか\n"
-        f"- 参考価格の目安（{price_txt}）\n"
-        f"- 在庫と発送条件の最新情報\n\n"
-        f"## 向き不向き\n"
-        f"作品ファンや、同系統のコレクションを増やしたい人に合いやすい。\n\n"
-        f"## 注意点\n"
-        f"価格と在庫は変わりやすい。判断は商品ページの最新表示で。"
+        f"「{title}」を{shop}で見かけてメモ。トレンドや予約状況を追っていると、"
+        f"こういう関連グッズも一緒に探しがちなので残しておく。\n\n"
+        f"作品ファンで一気に揃えたい人や、フィギュア・グッズを探している人の参考になれば。"
+        f"見た目・付属・サイズ感がイメージと合うかは各ページで確認を。参考価格の目安は{price_txt}。\n\n"
+        f"在庫と価格はショップごとに違うので、Amazon・楽天・Yahoo・メルカリ・駿河屋あたりで見比べるのが無難。"
     )
     return {
-        "article_title": f"{short}のポイント",
+        "article_title": f"{short}、探しメモ",
         "article_body": body,
-        "tweet_text": f"{short}のポイントをまとめました。",
+        "tweet_text": f"{short}が気になったので探してメモ。グッズ探し中の人の参考に。",
         "keyword": short[:20],
     }
 
@@ -255,8 +282,9 @@ def analyze_product_with_gemini(
     model_id = (model_name or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)).strip()
     price = getattr(product, "price", None)
     user_prompt = (
-        "次の商品を、普通のウェブ記事として書いてください。\n"
-        "煽り・宣伝コピー・AIっぽい感嘆表現は使わないでください。\n\n"
+        "次の商品を、たいち＠掘り出し物メモの口調で書いてください。\n"
+        "見出しや箇条書きは使わず、段落だけのメモにしてください。\n"
+        "tweet_text に URL は入れないでください。\n\n"
         f"商品名: {getattr(product, 'title', '')}\n"
         f"ショップ: {getattr(product, 'source', '')}\n"
         f"価格: {price if price is not None else '不明'}\n"
@@ -271,7 +299,7 @@ def analyze_product_with_gemini(
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=PRODUCT_SYSTEM_PROMPT,
-                temperature=0.45,
+                temperature=0.55,
                 max_output_tokens=2048,
                 response_mime_type="application/json",
             ),
@@ -295,7 +323,6 @@ def analyze_product_with_gemini(
     if _title_looks_ai(result["article_title"]):
         logger.info("AIっぽいタイトルのためフォールバック: %s", result["article_title"][:40])
         fb = _fallback_product_result(product)
-        # 本文はGeminiのものを活かし、タイトルだけ記事調に寄せる
         result["article_title"] = fb["article_title"]
         if _title_looks_ai(result["tweet_text"]):
             result["tweet_text"] = fb["tweet_text"]
@@ -347,7 +374,9 @@ def analyze_news_with_gemini(
         "has_product_links": bool(data.get("has_product_links", False)),
         "keyword": str(data.get("keyword", "")).strip(),
         "article_title": str(data.get("article_title", "")).strip(),
-        "article_body": re.sub(r"<[^>]+>", "", str(data.get("article_body", ""))).strip(),
+        "article_body": _normalize_article_body(
+            re.sub(r"<[^>]+>", "", str(data.get("article_body", ""))).strip()
+        ),
         "tweet_text": str(data.get("tweet_text", "")).strip()[:140],
     }
     if not result["keyword"] or not result["article_title"] or not result["article_body"] or not result["tweet_text"]:

@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 3.0.0
-Date: 2026-09-17
-Summary: 要約枠・CTA・FAQ・AdSense枠付き記事テンプレ
+Version: 4.0.0
+Date: 2026-09-20
+Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -42,24 +42,12 @@ Summary: 要約枠・CTA・FAQ・AdSense枠付き記事テンプレ
       <p class="meta">{{PUBLISH_DATE}}</p>
 
       {{PRODUCT_IMAGE}}
-      {{SUMMARY_BOX}}
-
-      <div class="adsense-slot" aria-label="広告枠（準備中）">AdSense Slot</div>
-
-      {{CTA_COMPARE}}
 
       <div class="content">
         {{ARTICLE_BODY}}
       </div>
 
-      {{CTA_COMPARE}}
-
-      {{FAQ_BLOCK}}
-
-      <div class="adsense-slot is-bottom" aria-label="広告枠（準備中）">AdSense Slot</div>
-
-      {{SOURCE_LINK}}
-      {{SECONDARY_LINKS}}
+      {{SHOP_LINKS}}
     </article>
 
     <a class="back" href="index.html">← トップへ戻る</a>

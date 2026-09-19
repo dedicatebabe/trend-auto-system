@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 3.0.0
-# Date: 2026-09-17
-# Summary: ホビー特化カテゴリと記事CTA/FAQ/要約枠コンポーネント追加
+# Version: 4.0.0
+# Date: 2026-09-20
+# Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -283,9 +283,27 @@ def _excerpt_from_body(text: str, *, limit: int = 140) -> str:
 
 
 def _plain_to_paragraphs(text: str) -> str:
+    """メモ調の段落本文を HTML 化する（見出しは出さない）。"""
     cleaned = _sanitize_public_copy(text)
     if not cleaned:
         return "<p>記事本文はありません。</p>"
+
+    strip_labels = {
+        "ポイント",
+        "向き不向き",
+        "注意点",
+        "見どころ",
+        "刺さる人",
+        "ひとこと注意",
+        "一言注意",
+        "向いている人",
+        "購入前の確認",
+        "見るべきところ",
+        "こんな人向け",
+        "この記事の注目ポイント3選",
+        "よくある質問",
+        "今すぐ各ショップで探す",
+    }
 
     blocks = re.split(r"\n\s*\n", cleaned)
     parts: list[str] = []
@@ -295,25 +313,23 @@ def _plain_to_paragraphs(text: str) -> str:
         if not lines:
             continue
 
-        if len(lines) == 1 and lines[0].startswith("## "):
-            parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
-            continue
-
-        if lines[0].startswith("## "):
-            parts.append(f"<h2>{html.escape(lines[0][3:].strip())}</h2>")
-            lines = lines[1:]
-            if not lines:
+        flat: list[str] = []
+        for ln in lines:
+            s = ln.strip()
+            if s.startswith("## "):
                 continue
-
-        if all(ln.startswith(("- ", "・")) for ln in lines):
-            items = []
-            for ln in lines:
-                item = ln[2:].strip() if ln.startswith("- ") else ln[1:].strip()
-                items.append(f"<li>{html.escape(item)}</li>")
-            parts.append(f"<ul>{''.join(items)}</ul>")
+            if s in strip_labels:
+                continue
+            if s.startswith(("- ", "・")):
+                item = s[2:].strip() if s.startswith("- ") else s[1:].strip()
+                if item:
+                    flat.append(item + "。")
+                continue
+            flat.append(s)
+        if not flat:
             continue
 
-        para = html.escape("\n".join(lines)).replace("\n", "<br>")
+        para = html.escape(" ".join(flat))
         if not lead_done and not parts:
             parts.append(f'<p class="lead">{para}</p>')
             lead_done = True
@@ -321,6 +337,7 @@ def _plain_to_paragraphs(text: str) -> str:
             parts.append(f"<p>{para}</p>")
 
     return "\n".join(parts) if parts else "<p>記事本文はありません。</p>"
+
 
 
 def _product_image_html(image_url: str, *, title: str) -> str:
@@ -402,49 +419,16 @@ def _status_badge_html(status: str) -> str:
     return f'<span class="{cls}">{html.escape(label)}</span>'
 
 
-def _summary_points_from_body(body: str) -> list[str]:
-    points: list[str] = []
-    for line in (body or "").splitlines():
-        s = line.strip()
-        if s.startswith("- "):
-            points.append(s[2:].strip())
-        if len(points) >= 3:
-            break
-    if len(points) >= 3:
-        return points[:3]
-    paras = [
-        ln.strip()
-        for ln in re.split(r"\n+", body or "")
-        if ln.strip() and not ln.strip().startswith("##") and not ln.strip().startswith("- ")
-    ]
-    for p in paras:
-        if p not in points:
-            points.append(p[:60])
-        if len(points) >= 3:
-            break
-    while len(points) < 3:
-        points.append("在庫・価格はショップごとに異なるため、購入前に最新表示を確認")
-    return points[:3]
-
-
-def _summary_box_html(body: str) -> str:
-    points = _summary_points_from_body(body)
-    items = "".join(f"<li>{html.escape(p)}</li>" for p in points)
-    return (
-        '<section class="summary-box" aria-label="この記事の注目ポイント">'
-        "<h2>この記事の注目ポイント3選</h2>"
-        f"<ol>{items}</ol>"
-        "</section>"
-    )
-
-
-def _cta_compare_html(links: dict[str, str], *, has_product_links: bool) -> str:
+def _shop_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
+    """Amazon〜駿河屋まで同一デザインのショップリンク。"""
     if not has_product_links:
         return ""
     mapping = (
-        ("amazon", "Amazonで探す", "cta-amazon"),
-        ("rakuten", "楽天市場で探す", "cta-rakuten"),
-        ("yahoo", "Yahoo!ショッピングで探す", "cta-yahoo"),
+        ("amazon", "Amazon", "shop-amazon"),
+        ("rakuten", "楽天市場", "shop-rakuten"),
+        ("yahoo", "Yahoo!", "shop-yahoo"),
+        ("mercari", "メルカリ", "shop-mercari"),
+        ("surugaya", "駿河屋", "shop-surugaya"),
     )
     buttons: list[str] = []
     for key, label, cls in mapping:
@@ -452,80 +436,45 @@ def _cta_compare_html(links: dict[str, str], *, has_product_links: bool) -> str:
         if not url:
             continue
         buttons.append(
-            f'<a class="cta-btn {cls}" href="{html.escape(url, quote=True)}" '
+            f'<a class="shop-link {cls}" href="{html.escape(url, quote=True)}" '
             f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
         )
     if not buttons:
         return ""
     return (
-        '<section class="cta-compare" aria-label="購入先比較">'
-        "<h2>今すぐ各ショップで探す</h2>"
-        '<p class="cta-note">在庫と価格はショップごとに違います。気になる方は先に比較してください。</p>'
-        f'<div class="cta-grid">{"".join(buttons)}</div>'
+        '<section class="shop-panel" aria-label="各ショップで探す">'
+        '<p class="shop-panel-label">各ショップで探す</p>'
+        f'<div class="shop-grid">{"".join(buttons)}</div>'
         "</section>"
     )
 
 
-def _secondary_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
-    if not has_product_links:
-        return ""
-    items = (
-        ("mercari", "メルカリ", "btn-mercari"),
-        ("surugaya", "駿河屋", "btn-surugaya"),
-    )
-    buttons: list[str] = []
-    for key, label, cls in items:
-        url = (links.get(key) or "").strip()
-        if not url:
-            continue
-        buttons.append(
-            f'<a class="shop-btn {cls}" href="{html.escape(url, quote=True)}" '
-            f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
-        )
-    if not buttons:
-        return ""
-    return (
-        '<div class="shop-links-secondary" aria-label="その他のショップ">'
-        f"{''.join(buttons)}"
-        "</div>"
-    )
+def _html_to_plain(fragment: str) -> str:
+    """既存記事 HTML 断片からプレーンテキストを復元する。"""
+    text = fragment or ""
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</p\s*>", "\n\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</h2\s*>", "\n\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"</li\s*>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<li[^>]*>", "- ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
-def _faq_block_html(*, title: str, keyword: str) -> str:
-    name = (keyword or title or "この商品").strip()[:40]
-    qas = [
-        (
-            "どこで買える？",
-            "「" + name + "」は Amazon・楽天市場・Yahoo!ショッピングなどで取り扱いを確認できます。"
-            "在庫はショップごとに異なるため、上の比較ボタンから最新情報を見てください。",
-        ),
-        (
-            "予約開始日・発売日は？",
-            "予約開始や発売日は販路によって差が出ることがあります。商品ページの案内が最新です。",
-        ),
-        (
-            "再販はある？",
-            "人気商品は再販されることがありますが、時期は未定なケースが多いです。"
-            "気になる場合は各ショップの入荷情報を定期的に確認してください。",
-        ),
-    ]
-    items_html: list[str] = []
-    for i, (q, a) in enumerate(qas):
-        open_attr = " open" if i == 0 else ""
-        items_html.append(
-            '<div class="faq-item">'
-            f"<details{open_attr}>"
-            f"<summary>{html.escape(q)}</summary>"
-            f'<p class="faq-a">{html.escape(a)}</p>'
-            "</details>"
-            "</div>"
-        )
-    return (
-        '<section class="faq-block" aria-label="よくある質問">'
-        "<h2>よくある質問</h2>"
-        f"{''.join(items_html)}"
-        "</section>"
+def _extract_content_plain_from_article(path: Path) -> str:
+    if not path.exists():
+        return ""
+    raw = path.read_text(encoding="utf-8")
+    match = re.search(
+        r'<div class="content">\s*(.*?)\s*</div>',
+        raw,
+        flags=re.DOTALL | re.IGNORECASE,
     )
+    if not match:
+        return ""
+    return _html_to_plain(match.group(1))
 
 
 def render_article_page(
@@ -542,6 +491,7 @@ def render_article_page(
     keyword: str = "",
     status: str = "",
 ) -> str:
+    _ = source_link
     excerpt = _excerpt_from_body(body)
     badge_label = _badge_for(
         has_product_links=has_product_links,
@@ -550,7 +500,6 @@ def render_article_page(
         keyword=keyword,
     )
     status_label = status or infer_status(title=title, body=body)
-    cta = _cta_compare_html(links, has_product_links=has_product_links)
     template = _load_template("article.html")
     return _apply(
         template,
@@ -568,15 +517,41 @@ def render_article_page(
             "STATUS_BADGE": _status_badge_html(status_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
             "PRODUCT_IMAGE": _product_image_html(image_url, title=title),
-            "SUMMARY_BOX": _summary_box_html(body) if has_product_links else "",
-            "CTA_COMPARE": cta,
             "ARTICLE_BODY": _plain_to_paragraphs(body),
-            "FAQ_BLOCK": _faq_block_html(title=title, keyword=keyword) if has_product_links else "",
-            "SOURCE_LINK": _source_link_html(source_link),
-            "SECONDARY_LINKS": _secondary_links_html(links, has_product_links=has_product_links),
+            "SHOP_LINKS": _shop_links_html(links, has_product_links=has_product_links),
             "YEAR": str(datetime.now(timezone.utc).year),
         },
     )
+
+
+def rebuild_all_article_pages() -> int:
+    """既存エントリのレイアウトを新テンプレで再出力する。"""
+    entries = load_entries()
+    count = 0
+    for entry in entries:
+        path = DOCS / entry.filename
+        body = _extract_content_plain_from_article(path)
+        if not body:
+            body = entry.excerpt or entry.title
+        page = render_article_page(
+            title=entry.title,
+            body=body,
+            source_link=entry.source_link,
+            created_at=entry.created_at,
+            has_product_links=entry.has_product_links,
+            links=entry.links,
+            canonical_url=article_public_url(entry.article_id),
+            badge=entry.badge,
+            image_url=entry.image_url,
+            keyword=entry.keyword,
+            status=entry.status,
+        )
+        path.write_text(page, encoding="utf-8")
+        count += 1
+    index_html = render_index_page(entries)
+    (DOCS / "index.html").write_text(index_html, encoding="utf-8")
+    logger.info("記事レイアウト再生成: %s 件", count)
+    return count
 
 
 def _badge_class(badge: str) -> str:
