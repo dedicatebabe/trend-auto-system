@@ -834,6 +834,28 @@
       "tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-19T00:11:29.745413+00:00"
+    },
+    {
+      "product_id": "amazon:B0F18J2CJF",
+      "source": "amazon",
+      "title": "ポケモンカードゲーム MEGA 拡張パック メガブレイブ BOX",
+      "url": "https://www.amazon.co.jp/dp/B0F18J2CJF?tag=djtaikutsu-22",
+      "article_id": "n_2c6cc7015d",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_2c6cc7015d.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-19T06:10:31.104564+00:00"
+    },
+    {
+      "product_id": "amazon:B0F189YH8W",
+      "source": "amazon",
+      "title": "ポケモンカードゲーム MEGA 拡張パック メガシンフォニア BOX",
+      "url": "https://www.amazon.co.jp/dp/B0F189YH8W?tag=djtaikutsu-22",
+      "article_id": "n_8b798393ba",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_8b798393ba.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-19T06:10:40.391009+00:00"
     }
   ]
 }
