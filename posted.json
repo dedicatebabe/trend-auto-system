@@ -889,6 +889,17 @@
       "tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-19T12:10:48.677875+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/book/18489341/",
+      "source": "rakuten",
+      "title": "『ウマ娘 プリティーダービー』 ミホノブルボン [CODE：グラサージュ]Ver. 1/7スケールフィギュア (塗装済み完成品フィギュア)",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/579d57e4.d51cd78d.579d57e5.90760aad/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F18489341%2F&link_type=text&id=0",
+      "article_id": "n_ca993cd713",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_ca993cd713.html",
+      "tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-19T18:09:14.238808+00:00"
     }
   ]
 }
