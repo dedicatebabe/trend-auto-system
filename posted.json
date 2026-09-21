@@ -1128,6 +1128,18 @@
       "reply_tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-20T18:09:50.148031+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/book/18805294/",
+      "source": "rakuten",
+      "title": "【楽天ブックス限定特典+特典】ゼルダの伝説 時のオカリナ(特典アイテム未定+【早期購入外付特典】オリジナルアートカードセット、オリジナルステッカー)",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/579d57e4.d51cd78d.579d57e5.90760aad/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F18805294%2F&link_type=text&id=0",
+      "article_id": "n_243e92b013",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_243e92b013.html",
+      "tweet_id": "",
+      "reply_tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-21T00:11:31.974665+00:00"
     }
   ]
 }
