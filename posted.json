@@ -1248,6 +1248,18 @@
       "reply_tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-22T06:11:16.875873+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/book/18663471/",
+      "source": "rakuten",
+      "title": "『スター・ウォーズ』 アクションフィギュア マンダロリアン&グローグー 【00062684649】 (フィギュア)",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/579d57e4.d51cd78d.579d57e5.90760aad/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fbook%2F18663471%2F&link_type=text&id=0",
+      "article_id": "n_2bc22c856b",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_2bc22c856b.html",
+      "tweet_id": "",
+      "reply_tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-22T18:10:33.936973+00:00"
     }
   ]
 }
