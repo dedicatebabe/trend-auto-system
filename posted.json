@@ -1284,6 +1284,18 @@
       "reply_tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-23T06:11:03.211854+00:00"
+    },
+    {
+      "product_id": "amazon:B0002YN99S",
+      "source": "amazon",
+      "title": "エポック社 【日本製】 アルミ製 パズルフレーム パネルマックス ホワイト (26×38cm) (パネルNo.3) 掛ヒモ 点数券付き セルカバーUVカット仕様 パズル Frame 額縁",
+      "url": "https://www.amazon.co.jp/dp/B0002YN99S?tag=djtaikutsu-22",
+      "article_id": "n_6408cc7be2",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_6408cc7be2.html",
+      "tweet_id": "",
+      "reply_tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-23T12:11:07.610025+00:00"
     }
   ]
 }
