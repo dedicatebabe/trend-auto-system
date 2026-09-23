@@ -1260,6 +1260,30 @@
       "reply_tweet_id": "",
       "x_error": "X API error: 402 Payment Required\ncredits depleted",
       "posted_at": "2026-09-22T18:10:33.936973+00:00"
+    },
+    {
+      "product_id": "amazon:B0HC23XKFV",
+      "source": "amazon",
+      "title": "[バンダイ(BANDAI)] 仮面ライダーマイス TAF 仮面ライダーダット 対象年齢 3 才以上 TOKUSATSU ACTION FIGURE",
+      "url": "https://www.amazon.co.jp/dp/B0HC23XKFV?tag=djtaikutsu-22",
+      "article_id": "n_365476d2d5",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_365476d2d5.html",
+      "tweet_id": "",
+      "reply_tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-23T06:10:55.204335+00:00"
+    },
+    {
+      "product_id": "amazon:B0HFM8Y15W",
+      "source": "amazon",
+      "title": "【メーカー特典つき】 タカラトミー(TAKARA TOMY) デュエル・マスターズ TCG DM26-RP3 逆札篇 第3弾 勝敵!逆転おこせ鬼の∞ディスペクター!! BOX",
+      "url": "https://www.amazon.co.jp/dp/B0HFM8Y15W?tag=djtaikutsu-22",
+      "article_id": "n_b235395875",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_b235395875.html",
+      "tweet_id": "",
+      "reply_tweet_id": "",
+      "x_error": "X API error: 402 Payment Required\ncredits depleted",
+      "posted_at": "2026-09-23T06:11:03.211854+00:00"
     }
   ]
 }
