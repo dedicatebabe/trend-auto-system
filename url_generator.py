@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.3.0
+# Version: 2.4.0
 # Date: 2026-09-24
-# Summary: 駿河屋アフィを goods_url パラメータに修正（白紙ページ対策）
+# Summary: 駿河屋は直検索+utmに変更（ジャンプ網白紙対策）
 # ==========================================
 """キーワード／商品ページから各ショップのアフィリエイトURLを組み立てる。"""
 
@@ -25,17 +25,21 @@ def generate_mercari_url(keyword: str, *, afid: str | None = None) -> str:
 
 
 def generate_surugaya_url(keyword: str, *, user_id: str | None = None) -> str:
-    """駿河屋アフィリエイトジャンプURL。"""
+    """
+    駿河屋検索URL。
+
+    affiliate.suruga-ya.jp の af_jump は本文なし302のため、環境によっては
+    白紙ページに見える。公式ジャンプ先と同じ直URL＋utm で開く。
+    """
     uid = (user_id if user_id is not None else os.getenv("SURUGAYA_USER_ID", "")).strip()
     if not uid:
         raise RuntimeError("環境変数 SURUGAYA_USER_ID が設定されていません。")
     encoded_kw = quote(keyword.strip(), safe="")
-    # category= 付きが公式検索と同じ形。パラメータは goods_url（url だと白紙になる）
-    target = f"https://www.suruga-ya.jp/search?category=&search_word={encoded_kw}"
     return (
-        "https://affiliate.suruga-ya.jp/modules/af/af_jump.php"
-        f"?user_id={quote(uid, safe='')}"
-        f"&goods_url={quote(target, safe='')}"
+        "https://www.suruga-ya.jp/search?"
+        f"category=&search_word={encoded_kw}"
+        f"&utm_medium=affiliate"
+        f"&utm_campaign=afid{quote(uid, safe='')}"
     )
 
 
