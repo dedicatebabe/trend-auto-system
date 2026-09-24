@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 5.0.0
-# Date: 2026-09-20
-# Summary: Xスレッド投稿（本投稿＋リプに記事URL）に変更
+# Version: 6.0.0
+# Date: 2026-09-24
+# Summary: X投稿をブラウザ既定に変更（API課金回避）
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
@@ -11,6 +11,7 @@ Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
 - 各ショップの上位 RANKING_POOL(20) を見る
 - 1回の実行で各 PUBLISH_PER_SOURCE(5) 件まで記事化（最大15件）
 - 主ショップは商品直URL、他ショップは商品名検索アフィ
+- X は既定でブラウザ投稿（X_POST_METHOD=browser）
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ except ImportError:  # pragma: no cover
         return False
 
 from gemini_helper import analyze_product_with_gemini
+from modules.x_browser_poster import post_to_x_via_browser
 from product_fetcher import (
     PUBLISH_PER_SOURCE,
     RANKING_POOL,
@@ -82,6 +84,24 @@ def require_env(name: str) -> str:
     return value
 
 
+def x_post_method() -> str:
+    """投稿方式: browser（既定）または api。"""
+    raw = os.getenv("X_POST_METHOD", "browser").strip().lower()
+    if raw in {"api", "twitter_api", "x_api"}:
+        return "api"
+    return "browser"
+
+
+def browser_headless() -> bool:
+    """ブラウザ投稿をヘッドレスにするか。"""
+    return os.getenv("X_BROWSER_HEADLESS", "1").strip().lower() not in {
+        "0",
+        "false",
+        "no",
+        "off",
+    }
+
+
 def _x_client():
     import tweepy
 
@@ -102,8 +122,8 @@ def _tweet_id_from_response(response: object) -> str:
     return tweet_id
 
 
-def post_thread_to_x(*, main_text: str, reply_text: str) -> tuple[str, str]:
-    """本投稿→リプライの2連投。戻り値は (本投稿ID, リプライID)。"""
+def post_thread_to_x_api(*, main_text: str, reply_text: str) -> tuple[str, str]:
+    """API で本投稿→リプライ。戻り値は (本投稿ID, リプライID)。"""
     from tweepy.errors import HTTPException
 
     client = _x_client()
@@ -118,6 +138,21 @@ def post_thread_to_x(*, main_text: str, reply_text: str) -> tuple[str, str]:
     except HTTPException as exc:
         raise RuntimeError(f"X API error: {exc}") from exc
     return main_id, reply_id
+
+
+def dispatch_x_post(*, main_text: str, reply_text: str) -> tuple[str, str]:
+    """設定に応じてブラウザまたは API で X 投稿する。"""
+    method = x_post_method()
+    if method == "browser":
+        logger.info("X 投稿方式: browser")
+        return post_to_x_via_browser(
+            main_text,
+            reply_text,
+            headless=browser_headless(),
+        )
+
+    logger.info("X 投稿方式: api")
+    return post_thread_to_x_api(main_text=main_text, reply_text=reply_text)
 
 
 def build_main_tweet(base: str) -> str:
@@ -286,11 +321,12 @@ def main() -> int:
             tweet_id = ""
             reply_tweet_id = ""
             x_error = ""
+            x_method = x_post_method()
             if args.skip_x:
                 logger.warning("--skip-x のため X 投稿をスキップ")
             else:
                 try:
-                    tweet_id, reply_tweet_id = post_thread_to_x(
+                    tweet_id, reply_tweet_id = dispatch_x_post(
                         main_text=main_tweet,
                         reply_text=reply_tweet,
                     )
@@ -308,6 +344,7 @@ def main() -> int:
                     "article_url": article_url,
                     "tweet_id": tweet_id,
                     "reply_tweet_id": reply_tweet_id,
+                    "x_method": x_method if not args.skip_x else "skipped",
                     "x_error": x_error,
                     "posted_at": datetime.now(timezone.utc).isoformat(),
                 }

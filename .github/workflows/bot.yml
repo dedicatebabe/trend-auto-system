@@ -1,13 +1,11 @@
 # ==========================================
-# Version: 2.1.0
-# Date: 2026-09-17
-# Summary: X自動投稿を有効化（--skip-x を解除）
+# Version: 3.0.0
+# Date: 2026-09-24
+# Summary: 定期実行を止め、手動のみ（Xはローカルブラウザ）
 # ==========================================
 name: Trend Pick Bot
 
 on:
-  schedule:
-    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 permissions:
@@ -30,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run main.py
+      - name: Run main.py (記事のみ / Xはローカル)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           MERCARI_AFID: ${{ secrets.MERCARI_AFID }}
@@ -38,11 +36,8 @@ jobs:
           AMAZON_ASSOCIATE_TAG: ${{ secrets.AMAZON_ASSOCIATE_TAG }}
           RAKUTEN_AF_ID: ${{ secrets.RAKUTEN_AF_ID }}
           RAKUTEN_APPLICATION_ID: ${{ secrets.RAKUTEN_APPLICATION_ID }}
-          X_API_KEY: ${{ secrets.X_API_KEY }}
-          X_API_SECRET: ${{ secrets.X_API_SECRET }}
-          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
-        run: python main.py --per-source 5 --pool 20
+          X_POST_METHOD: browser
+        run: python main.py --per-source 5 --pool 20 --skip-x
 
       - name: Commit and push docs and posted.json
         run: |

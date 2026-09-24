@@ -1,10 +1,11 @@
 # ==========================================
-# Version: 2.1.0
-# Date: 2026-09-14
-# Summary: google.genai に切り替え（旧 generativeai 廃止対応）
+# Version: 3.0.0
+# Date: 2026-09-24
+# Summary: playwright追加（ブラウザ投稿用）
 # ==========================================
 feedparser>=6.0.11
 google-genai>=1.0.0
 tweepy>=4.14.0
 requests>=2.31.0
 python-dotenv>=1.0.0
+playwright>=1.40.0
