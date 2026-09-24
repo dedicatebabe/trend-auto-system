@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.4.0
+# Version: 2.5.0
 # Date: 2026-09-24
-# Summary: 駿河屋は直検索+utmに変更（ジャンプ網白紙対策）
+# Summary: 駿河屋リンクを自前中継ページ経由に変更
 # ==========================================
 """キーワード／商品ページから各ショップのアフィリエイトURLを組み立てる。"""
 
@@ -10,6 +10,8 @@ from __future__ import annotations
 import os
 import re
 from urllib.parse import quote
+
+SITE_BASE = "https://dedicatebabe.github.io/trend-auto-system"
 
 
 def generate_mercari_url(keyword: str, *, afid: str | None = None) -> str:
@@ -26,20 +28,17 @@ def generate_mercari_url(keyword: str, *, afid: str | None = None) -> str:
 
 def generate_surugaya_url(keyword: str, *, user_id: str | None = None) -> str:
     """
-    駿河屋検索URL。
+    駿河屋への中継URL。
 
-    affiliate.suruga-ya.jp の af_jump は本文なし302のため、環境によっては
-    白紙ページに見える。公式ジャンプ先と同じ直URL＋utm で開く。
+    docs/go/surugaya.html が公式 af_jump を裏で叩き、ユーザーは検索結果へ直送する。
     """
     uid = (user_id if user_id is not None else os.getenv("SURUGAYA_USER_ID", "")).strip()
     if not uid:
         raise RuntimeError("環境変数 SURUGAYA_USER_ID が設定されていません。")
     encoded_kw = quote(keyword.strip(), safe="")
     return (
-        "https://www.suruga-ya.jp/search?"
-        f"category=&search_word={encoded_kw}"
-        f"&utm_medium=affiliate"
-        f"&utm_campaign=afid{quote(uid, safe='')}"
+        f"{SITE_BASE.rstrip('/')}/go/surugaya.html"
+        f"?q={encoded_kw}&uid={quote(uid, safe='')}"
     )
 
 

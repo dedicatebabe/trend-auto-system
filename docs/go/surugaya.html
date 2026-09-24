@@ -1,0 +1,83 @@
+<!-- ==========================================
+Version: 1.0.0
+Date: 2026-09-24
+Summary: 駿河屋アフィ中継（公式ジャンプ計測＋直遷移フォールバック）
+========================================== -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>駿河屋へ移動中 | Trend Pick</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+      background: #eef2f6;
+      color: #152033;
+    }
+    .box {
+      text-align: center;
+      padding: 2rem 1.5rem;
+    }
+    .box p { margin: 0.4rem 0; line-height: 1.6; }
+    .muted { color: #5c6b7e; font-size: 0.9rem; }
+    a { color: #1a5f9e; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <p id="msg">駿河屋へ移動しています…</p>
+    <p class="muted" id="hint">しばらく待っても切り替わらない場合は下のリンクを押してください。</p>
+    <p><a id="manual" href="https://www.suruga-ya.jp/">駿河屋を開く</a></p>
+  </div>
+  <script>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var q = (params.get("q") || "").trim();
+    var uid = (params.get("uid") || "").trim();
+    var msg = document.getElementById("msg");
+    var manual = document.getElementById("manual");
+
+    if (!q || !uid) {
+      msg.textContent = "リンクが不正です。記事ページから開き直してください。";
+      return;
+    }
+
+    var target =
+      "https://www.suruga-ya.jp/search?category=&search_word=" +
+      encodeURIComponent(q);
+    var direct =
+      target +
+      "&utm_medium=affiliate&utm_campaign=afid" +
+      encodeURIComponent(uid);
+    var jump =
+      "https://affiliate.suruga-ya.jp/modules/af/af_jump.php?user_id=" +
+      encodeURIComponent(uid) +
+      "&goods_url=" +
+      encodeURIComponent(target);
+
+    manual.href = direct;
+
+    // 1) 公式ジャンプを裏で踏んでクリック計測（白紙ページには滞在しない）
+    try {
+      var img = new Image();
+      img.referrerPolicy = "no-referrer-when-downgrade";
+      img.src = jump;
+    } catch (e) {}
+    try {
+      fetch(jump, { mode: "no-cors", credentials: "omit", redirect: "follow", cache: "no-store" }).catch(function () {});
+    } catch (e2) {}
+
+    // 2) ユーザーは必ず駿河屋の検索結果へ（直URL＋utm）
+    setTimeout(function () {
+      window.location.replace(direct);
+    }, 350);
+  })();
+  </script>
+</body>
+</html>
