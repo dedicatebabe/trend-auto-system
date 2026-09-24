@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.0.0
+# Version: 1.1.0
 # Date: 2026-09-24
-# Summary: Trend Pick 用 X ブラウザ投稿（FANZA実装を移植）
+# Summary: 単発投稿（リンク込み）を追加。リプライは任意
 # ==========================================
 """X Web UI 経由の投稿（API課金なし）。"""
 
@@ -355,6 +355,58 @@ def _ensure_logged_in(page) -> None:
             "X のホームを認識できません。再ログインしてください"
             "（python scripts/x_browser_login.py）。"
         )
+
+
+def post_single_to_x_via_browser(
+    text: str,
+    *,
+    local_image_path: str | None = None,
+    headless: bool = True,
+    profile_dir: Path | None = None,
+) -> str:
+    """
+    ブラウザで単発ポストする（リンク込み本文想定）。
+
+    戻り値: tweet_id
+    """
+    body = (text or "").strip()
+    if not body:
+        raise ValueError("投稿文が空です。")
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError(
+            "playwright が未インストールです。"
+            " pip install playwright && playwright install chromium"
+        ) from exc
+
+    profile = Path(profile_dir) if profile_dir else browser_profile_dir()
+    profile.mkdir(parents=True, exist_ok=True)
+
+    with sync_playwright() as p:
+        context = launch_x_context(p, headless=headless, profile_dir=profile)
+        page = context.pages[0] if context.pages else context.new_page()
+        try:
+            _ensure_logged_in(page)
+            logger.info("X ブラウザ投稿: 単発ポストを作成します")
+            page.goto(COMPOSE_URL, wait_until="domcontentloaded")
+            _sleep(1.0, 2.0)
+            _dismiss_blocking_dialogs(page)
+            _fill_composer(page, body)
+            if local_image_path:
+                _attach_image(page, Path(local_image_path))
+            tweet_id = _submit_composer(page)
+            status_url = _open_status(page, tweet_id)
+            logger.info("X ブラウザ投稿: 完了 %s", status_url)
+            return tweet_id
+        except Exception:
+            shot = _save_failure_screenshot(page, "x_browser_fail")
+            if shot:
+                logger.error("画面キャプチャ: %s", shot)
+            raise
+        finally:
+            context.close()
 
 
 def post_to_x_via_browser(
