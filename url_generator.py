@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 2.2.0
-# Date: 2026-09-17
-# Summary: Yahoo!ショッピング検索リンクを追加しCTA用3店を整備
+# Version: 2.3.0
+# Date: 2026-09-24
+# Summary: 駿河屋アフィを goods_url パラメータに修正（白紙ページ対策）
 # ==========================================
 """キーワード／商品ページから各ショップのアフィリエイトURLを組み立てる。"""
 
@@ -30,12 +30,12 @@ def generate_surugaya_url(keyword: str, *, user_id: str | None = None) -> str:
     if not uid:
         raise RuntimeError("環境変数 SURUGAYA_USER_ID が設定されていません。")
     encoded_kw = quote(keyword.strip(), safe="")
-    target = f"https://www.suruga-ya.jp/search?search_word={encoded_kw}"
-    encoded_target = quote(target, safe="")
+    # category= 付きが公式検索と同じ形。パラメータは goods_url（url だと白紙になる）
+    target = f"https://www.suruga-ya.jp/search?category=&search_word={encoded_kw}"
     return (
         "https://affiliate.suruga-ya.jp/modules/af/af_jump.php"
         f"?user_id={quote(uid, safe='')}"
-        f"&action=default&url={encoded_target}"
+        f"&goods_url={quote(target, safe='')}"
     )
 
 
