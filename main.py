@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 6.1.0
-# Date: 2026-09-24
-# Summary: Xは親投稿にリンク込みの単発投稿に戻す
+# Version: 6.2.0
+# Date: 2026-09-26
+# Summary: 0件は静かに終了、ブランド外商品を公開前に除外
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
@@ -38,6 +38,7 @@ from product_fetcher import (
     PUBLISH_PER_SOURCE,
     RANKING_POOL,
     fetch_all_marketplace_products,
+    is_on_brand_product,
     is_usable_product_title,
 )
 from site_builder import article_public_url, load_entries, publish_article
@@ -251,7 +252,8 @@ def main() -> int:
         if args.limit and args.limit > 0:
             products = products[: args.limit]
         if not products:
-            raise RuntimeError("紹介可能な新着商品が見つかりませんでした。")
+            logger.warning("紹介可能な新着商品がありません。今回はスキップします。")
+            return 0
 
         logger.info(
             "取得商品 %s 件（pool=%s / per_source=%s）",
@@ -262,16 +264,23 @@ def main() -> int:
 
         published = 0
         for product in products:
-            if not is_usable_product_title(product.title):
-                logger.warning("ゴミタイトルのためスキップ: %s", product.title[:60])
+            if not is_usable_product_title(product.title) or not is_on_brand_product(
+                product.title
+            ):
+                logger.warning("ブランド外/ゴミタイトルのためスキップ: %s", product.title[:60])
                 continue
 
             analyzed = analyze_product_with_gemini(product)
             article_title = str(analyzed["article_title"])
-            if not is_usable_product_title(article_title) or any(
-                ng in article_title for ng in ("管理番号", "商品番号", "フィギュア（楽天）")
+            if (
+                not is_usable_product_title(article_title)
+                or not is_on_brand_product(article_title)
+                or any(
+                    ng in article_title
+                    for ng in ("管理番号", "商品番号", "フィギュア（楽天）")
+                )
             ):
-                logger.warning("生成タイトルがゴミのためスキップ: %s", article_title[:60])
+                logger.warning("生成タイトルが不適合のためスキップ: %s", article_title[:60])
                 continue
 
             links = build_cross_shop_links(
@@ -339,7 +348,8 @@ def main() -> int:
             return 0
 
         if published == 0:
-            raise RuntimeError("公開可能な商品記事が0件でした。")
+            logger.warning("公開できた商品記事が0件でした。今回はスキップします。")
+            return 0
 
         logger.info("完了: %s 件の商品記事を公開", published)
         return 0

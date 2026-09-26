@@ -1,8 +1,8 @@
 #!/bin/zsh
 # ==========================================
-# Version: 1.0.0
-# Date: 2026-09-24
-# Summary: Trend Pick ローカル定期実行（ブラウザでX投稿）
+# Version: 1.1.0
+# Date: 2026-09-26
+# Summary: トレンド検索向けに pool を拡大
 # ==========================================
 set -euo pipefail
 
@@ -25,8 +25,7 @@ LOG="$LOG_DIR/scheduled.log"
 
 {
   echo "==== $(date '+%Y-%m-%d %H:%M:%S') ===="
-  /Users/shin/anaconda3/bin/python main.py --per-source 1 --pool 10 --limit 1
-  # 記事を GitHub Pages に反映
+  /Users/shin/anaconda3/bin/python main.py --per-source 2 --pool 30 --limit 1
   if git status --porcelain docs/ posted.json | grep -q .; then
     git add docs/ posted.json
     git commit -m "chore: update affiliate product articles (local)" || true

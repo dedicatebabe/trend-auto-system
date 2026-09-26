@@ -1,14 +1,15 @@
 # ==========================================
-# Version: 1.4.0
-# Date: 2026-09-17
-# Summary: ホビー特化の新カテゴリ判定に切替
+# Version: 2.0.0
+# Date: 2026-09-26
+# Summary: トレンド起点の商品選定とブランド適合フィルタに刷新
 # ==========================================
 """
-売れ筋ランキング起点の商品取得。
+トレンド／予約寄りキーワードから商品を取得する。
 
 ルール:
-- 各ショップで上位 RANKING_POOL 件を取得
-- フィルタ後、スコア順に PUBLISH_PER_SOURCE 件まで採用
+- ニュース由来＋定番トレンド語で Amazon / 楽天を検索
+- ブランドに合わない商品（幼児玩具・汎用品など）は除外
+- メルカリは認証API化のためソースから外す
 - 返す URL は商品ページ直リンクのみ（検索URL禁止）
 """
 
@@ -20,27 +21,88 @@ import re
 from dataclasses import dataclass, field
 from html import unescape as html_unescape
 from typing import Any
-from urllib.parse import quote, urljoin
+from urllib.parse import quote
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-# ランキングから何件見るか / 何件記事化するか
-RANKING_POOL = 20
-PUBLISH_PER_SOURCE = 5
+RANKING_POOL = 30
+PUBLISH_PER_SOURCE = 3
 
 USER_AGENT = (
-    "TrendPickBot/2.0 (+https://dedicatebabe.github.io/trend-auto-system/; affiliate-research)"
+    "TrendPickBot/2.1 (+https://dedicatebabe.github.io/trend-auto-system/; affiliate-research)"
 )
 
-# ジャンル寄せ（アダルト除外・ホビー寄り）
-DEFAULT_KEYWORDS = (
-    "Nintendo Switch ソフト",
-    "ワイヤレスイヤホン",
-    "フィギュア",
-    "アニメ Blu-ray",
+# トレンド掘り出し用の定番クエリ（ニュースが薄いときの保険）
+TREND_SEARCH_QUERIES = (
+    "フィギュア 予約",
+    "フィギュア 再販",
+    "スケールフィギュア",
+    "ねんどろいど 予約",
     "一番くじ",
+    "ポケモンカード BOX",
+    "ワンピースカード BOX",
+    "遊戯王 ブースター",
+    "ベイブレードX",
+    "ガンプラ 予約",
+    "アニメ Blu-ray",
+    "グッドスマイル フィギュア",
+)
+
+# タイトルに1つ以上あれば採用候補
+ALLOW_TITLE_MARKERS = (
+    "フィギュア",
+    "スケール",
+    "ねんどろいど",
+    "Nendoroid",
+    "figma",
+    "予約",
+    "再販",
+    "受注",
+    "カードゲーム",
+    "ブースター",
+    "BOX",
+    "ポケモン",
+    "ポケカ",
+    "ワンピースカード",
+    "ワンピカード",
+    "遊戯王",
+    "デュエル・マスターズ",
+    "デュエマ",
+    "ベイブレード",
+    "一番くじ",
+    "Blu-ray",
+    "ブルーレイ",
+    "ガンプラ",
+    "プラモデル",
+    "ガンダム",
+    "amiibo",
+    "トレカ",
+    "原作",
+    "コミック",
+    "漫画",
+)
+
+# ブランドから外す（幼児玩具・汎用品・ランキング端材）
+DENY_TITLE_MARKERS = (
+    "シルバニア",
+    "メルちゃん",
+    "リカちゃん",
+    "おせわいっぱい",
+    "バルーン",
+    "パズルフレーム",
+    "パネルマックス",
+    "ワイヤレスイヤホン",
+    "AirPods",
+    "ACアダプタ",
+    "純正ドック",
+    "数字バルーン",
+    "王冠付き",
+    "トイプードルの赤ちゃん",
+    "ゆりかご",
+    "おむつ",
+    "抱っこひも",
 )
 
 ADULT_NG = (
@@ -52,7 +114,6 @@ ADULT_NG = (
     "下着",
 )
 
-# 人間が読めない・ゴミタイトル
 BAD_TITLE_PATTERNS = (
     re.compile(r"^Amazon商品\s*B0", re.I),
     re.compile(r"^Amazon$", re.I),
@@ -126,8 +187,20 @@ def _is_ng_title(title: str) -> bool:
     return any(ng in (title or "") for ng in ADULT_NG)
 
 
+def is_on_brand_product(title: str) -> bool:
+    """たいちアカウント／サイトの顔に合う商品か。"""
+    text = (title or "").strip()
+    if len(text) < 8:
+        return False
+    if any(ng in text for ng in DENY_TITLE_MARKERS):
+        return False
+    if _is_ng_title(text):
+        return False
+    return any(ok in text for ok in ALLOW_TITLE_MARKERS)
+
+
 def is_usable_product_title(title: str) -> bool:
-    """紹介に耐える商品名か。"""
+    """紹介に耐える商品名か（可読性＋ブランド適合）。"""
     text = (title or "").strip()
     if len(text) < 8:
         return False
@@ -135,8 +208,9 @@ def is_usable_product_title(title: str) -> bool:
         return False
     if any(pat.search(text) for pat in BAD_TITLE_PATTERNS):
         return False
-    # 数字だけのIDっぽい末尾だけ、などは除外
     if re.fullmatch(r".{0,20}\d{6,}", text) and "フィギュア（楽天）" in text:
+        return False
+    if not is_on_brand_product(text):
         return False
     return True
 
@@ -415,6 +489,214 @@ def fetch_amazon_bestsellers(
         if len(items) >= pool:
             break
     return items
+
+
+def fetch_amazon_keyword_search(
+    keyword: str,
+    *,
+    pool: int = RANKING_POOL,
+    session: requests.Session | None = None,
+) -> list[ProductItem]:
+    """Amazon キーワード検索から ASIN 直リンクを抽出する。"""
+    sess = session or _session()
+    kw = (keyword or "").strip()
+    if not kw:
+        return []
+    url = f"https://www.amazon.co.jp/s?k={quote(kw)}"
+    try:
+        res = sess.get(url, timeout=25)
+        res.raise_for_status()
+        html_text = res.text
+    except requests.RequestException as exc:
+        logger.warning("Amazon検索取得失敗 (%s): %s", kw, exc)
+        return []
+
+    asins = re.findall(r'data-asin="([A-Z0-9]{10})"', html_text)
+    items: list[ProductItem] = []
+    seen: set[str] = set()
+    for asin in asins:
+        if asin in seen:
+            continue
+        seen.add(asin)
+        title_match = re.search(
+            rf'data-asin="{asin}"[\s\S]{{0,900}}?alt="([^"]{{8,160}})"',
+            html_text,
+        )
+        title = title_match.group(1).strip() if title_match else f"Amazon商品 {asin}"
+        if not is_on_brand_product(title) and not title.startswith("Amazon商品"):
+            # タイトル未確定のものは後で enrich。暫定NGはスキップ
+            if not title.startswith("Amazon商品"):
+                continue
+        img_match = re.search(
+            rf'data-asin="{asin}"[\s\S]{{0,1200}}?src="(https://[^"]+(?:images-amazon|media-amazon)[^"]+)"',
+            html_text,
+            re.I,
+        )
+        image_url = img_match.group(1).strip() if img_match else ""
+        if not _is_good_product_image(image_url):
+            image_url = ""
+        try:
+            product_url = amazon_product_url(asin)
+        except RuntimeError:
+            break
+        items.append(
+            ProductItem(
+                product_id=f"amazon:{asin}",
+                source="amazon",
+                title=title,
+                url=product_url,
+                image_url=image_url,
+                rank=len(items) + 1,
+                keyword=kw[:40],
+                badge=_badge_for_title(title),
+                extra={"asin": asin, "search_kw": kw},
+            )
+        )
+        if len(items) >= pool:
+            break
+    return items
+
+
+def fetch_rakuten_keyword_search(
+    keyword: str,
+    *,
+    pool: int = RANKING_POOL,
+    session: requests.Session | None = None,
+) -> list[ProductItem]:
+    """楽天キーワード検索から商品直URLを抽出する。"""
+    sess = session or _session()
+    kw = (keyword or "").strip()
+    if not kw:
+        return []
+    page = f"https://search.rakuten.co.jp/search/mall/{quote(kw)}/"
+    try:
+        html_text = sess.get(page, timeout=20).text
+    except requests.RequestException as exc:
+        logger.warning("楽天検索HTML取得失敗 (%s): %s", kw, exc)
+        return []
+
+    pairs: list[tuple[str, str, str]] = []
+    for block in re.findall(
+        r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
+        html_text,
+        flags=re.I | re.S,
+    ):
+        if '"ItemList"' not in block and '"Product"' not in block:
+            continue
+        for m in re.finditer(
+            r'"@type"\s*:\s*"Product"[\s\S]*?'
+            r'"name"\s*:\s*"((?:\\.|[^"\\]){8,200})"([\s\S]{0,800}?)'
+            r'"url"\s*:\s*"(https://item\.rakuten\.co\.jp/[^"]+)"',
+            block,
+        ):
+            title = html_unescape(m.group(1)).replace('\\"', '"').replace("\\/", "/")
+            title = re.sub(r"\s+", " ", title).strip()
+            mid = m.group(2)
+            img_m = re.search(r'"image"\s*:\s*\[\s*"([^"]+)"', mid) or re.search(
+                r'"image"\s*:\s*"([^"]+)"', mid
+            )
+            image_url = ""
+            if img_m:
+                image_url = html_unescape(img_m.group(1)).replace("\\/", "/")
+            item_url = m.group(3).split("?")[0].rstrip("/") + "/"
+            pairs.append((item_url, title, image_url))
+
+    if not pairs:
+        for m in re.finditer(
+            r'href="(https://item\.rakuten\.co\.jp/[^"]+)"[^>]*>'
+            r"([^<]{10,160})<",
+            html_text,
+            flags=re.I,
+        ):
+            item_url = m.group(1).split("?")[0].rstrip("/") + "/"
+            title = re.sub(r"\s+", " ", html_unescape(m.group(2)).strip())
+            pairs.append((item_url, title, ""))
+
+    items: list[ProductItem] = []
+    seen: set[str] = set()
+    for item_url, title, image_url in pairs:
+        if item_url in seen:
+            continue
+        if not is_on_brand_product(title):
+            continue
+        seen.add(item_url)
+        try:
+            aff = rakuten_product_affiliate_url(item_url)
+        except RuntimeError:
+            return items
+        items.append(
+            ProductItem(
+                product_id=f"rakuten:{item_url}",
+                source="rakuten",
+                title=title[:120],
+                url=aff,
+                image_url=image_url,
+                rank=len(items) + 1,
+                keyword=kw[:40],
+                badge=_badge_for_title(title),
+                extra={"raw_url": item_url, "search_kw": kw},
+            )
+        )
+        if len(items) >= pool:
+            break
+    return items
+
+
+def build_trend_search_queries(*, news_limit: int = 8) -> list[str]:
+    """定番トレンド語を先に、続いてニュース由来の検索語を返す。"""
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    def add(q: str) -> None:
+        text = re.sub(r"\s+", " ", (q or "").strip())
+        if len(text) < 3:
+            return
+        key = text.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        queries.append(text)
+
+    # 枯渇しにくい定番を先に
+    for q in TREND_SEARCH_QUERIES:
+        add(q)
+
+    try:
+        from rss_fetcher import list_relevant_news
+
+        for news in list_relevant_news(limit=news_limit):
+            for seed in _search_seeds_from_news_title(news.title):
+                add(seed)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("ニュース由来クエリ取得失敗: %s", exc)
+
+    return queries
+
+
+def _search_seeds_from_news_title(title: str) -> list[str]:
+    """ニュースタイトルから商品検索語を作る。"""
+    text = (title or "").strip()
+    if not text:
+        return []
+    seeds: list[str] = []
+    for m in re.finditer(r"[『「]([^』」]{2,40})[』」]", text):
+        name = m.group(1).strip()
+        if any(x in text for x in ("Blu-ray", "ブルーレイ", "BD", "DVD")):
+            seeds.append(f"{name} Blu-ray")
+        elif any(x in text for x in ("カード", "ブースター", "BOX")):
+            seeds.append(f"{name} BOX")
+        elif any(x in text for x in ("一番くじ", "くじ")):
+            seeds.append(f"{name} 一番くじ")
+        else:
+            seeds.append(f"{name} フィギュア")
+            seeds.append(f"{name} グッズ")
+    if not seeds:
+        # 作品括弧が無い場合は短く切ってフィギュア検索
+        short = re.sub(r"[【】\[\]（）()]", " ", text)
+        short = re.sub(r"\s+", " ", short).strip()[:24]
+        if len(short) >= 4:
+            seeds.append(f"{short} フィギュア")
+    return seeds[:4]
 
 
 def fetch_mercari_items(
@@ -699,30 +981,74 @@ def fetch_all_marketplace_products(
     per_source: int = PUBLISH_PER_SOURCE,
     skip_ids: set[str] | None = None,
     mercari_keyword: str = "フィギュア",
+    max_queries: int = 10,
 ) -> list[ProductItem]:
     """
-    3ショップから売れ筋を取り、各 per_source 件ずつ返す。
+    トレンド語で Amazon / 楽天を検索し、ブランド適合の商品を返す。
 
-    合計の目安: per_source * 3（既定 5*3=15）
+    メルカリはソースから外す（認証API化のため）。
     """
+    _ = mercari_keyword
     sess = _session()
-    buckets = [
-        ("amazon", fetch_amazon_bestsellers(pool=pool, session=sess)),
-        ("rakuten", fetch_rakuten_ranking(pool=pool, session=sess)),
-        ("mercari", fetch_mercari_items(keyword=mercari_keyword, pool=pool, session=sess)),
-    ]
-    selected: list[ProductItem] = []
-    for name, rows in buckets:
-        # タイトル補強前は空タイトル許可（楽天HTML）
-        picked = select_products_for_publish(
-            rows, limit=per_source * 2, skip_ids=skip_ids, require_usable_title=False
-        )
-        logger.info("%s: pool=%s candidate=%s", name, len(rows), len(picked))
-        selected.extend(picked)
+    skipped = skip_ids or set()
+    queries = build_trend_search_queries(news_limit=8)[: max(1, int(max_queries))]
+    logger.info("検索クエリ %s 件: %s", len(queries), queries[:5])
 
+    collected: list[ProductItem] = []
+    seen_ids: set[str] = set()
+    per_query = max(3, min(8, int(pool) // 2))
+
+    for qw in queries:
+        for fetcher, name in (
+            (fetch_amazon_keyword_search, "amazon"),
+            (fetch_rakuten_keyword_search, "rakuten"),
+        ):
+            try:
+                rows = fetcher(qw, pool=per_query, session=sess)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("%s 検索失敗 (%s): %s", name, qw, exc)
+                continue
+            added = 0
+            for p in rows:
+                if p.product_id in skipped or p.product_id in seen_ids:
+                    continue
+                if p.source == "amazon" and str(p.title).startswith("Amazon商品"):
+                    pass
+                elif not is_on_brand_product(p.title):
+                    continue
+                seen_ids.add(p.product_id)
+                collected.append(p)
+                added += 1
+            logger.info("%s/%s: got=%s kept=%s", name, qw[:20], len(rows), added)
+
+        if len(collected) >= max(12, per_source * 6):
+            break
+
+    if not collected:
+        logger.warning("トレンド検索で候補0件。定番クエリの再試行のみ。")
+        for qw in TREND_SEARCH_QUERIES[:4]:
+            for fetcher in (fetch_amazon_keyword_search, fetch_rakuten_keyword_search):
+                for p in fetcher(qw, pool=per_query, session=sess):
+                    if p.product_id in skipped or p.product_id in seen_ids:
+                        continue
+                    if p.source != "amazon" and not is_on_brand_product(p.title):
+                        continue
+                    seen_ids.add(p.product_id)
+                    collected.append(p)
+
+    selected = select_products_for_publish(
+        collected,
+        limit=max(per_source * 4, 8),
+        skip_ids=skipped,
+        require_usable_title=False,
+    )
     enriched = enrich_product_titles(selected, session=sess)
-    usable = [p for p in enriched if is_usable_product_title(p.title)]
-    # ソース別に上限
+    usable = [
+        p
+        for p in enriched
+        if is_usable_product_title(p.title) and is_on_brand_product(p.title)
+    ]
+
     out: list[ProductItem] = []
     counts: dict[str, int] = {}
     for p in sorted(usable, key=lambda x: x.score, reverse=True):
@@ -731,6 +1057,7 @@ def fetch_all_marketplace_products(
             continue
         counts[p.source] = n + 1
         out.append(p)
+
     logger.info(
         "usable after enrich: %s / published: %s (%s)",
         len(usable),
