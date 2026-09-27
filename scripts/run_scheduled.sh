@@ -1,8 +1,8 @@
 #!/bin/zsh
 # ==========================================
-# Version: 1.1.0
-# Date: 2026-09-26
-# Summary: トレンド検索向けに pool を拡大
+# Version: 1.2.0
+# Date: 2026-09-27
+# Summary: アクティブ時間帯を中心に実行（枠外は main が静終了）
 # ==========================================
 set -euo pipefail
 
@@ -17,6 +17,7 @@ export LANG="ja_JP.UTF-8"
 export LC_ALL="ja_JP.UTF-8"
 export X_POST_METHOD="browser"
 export X_BROWSER_HEADLESS="1"
+export X_REPLY_DELAY_SEC="60"
 export PLAYWRIGHT_BROWSERS_PATH="$HOME/Library/Caches/ms-playwright"
 
 LOG_DIR="/Users/shin/Library/Application Support/trend-pick/logs"

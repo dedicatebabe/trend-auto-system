@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 1.1.0
-# Date: 2026-09-24
-# Summary: 単発投稿（リンク込み）を追加。リプライは任意
+# Version: 2.0.1
+# Date: 2026-09-27
+# Summary: PLAYWRIGHT_BROWSERS_PATHをホームキャッシュへ強制固定
 # ==========================================
 """X Web UI 経由の投稿（API課金なし）。"""
 
@@ -20,12 +20,13 @@ DEFAULT_PROFILE_DIR = Path.home() / ".trend-pick" / "x-browser-profile"
 BROWSERS_PATH = Path.home() / "Library" / "Caches" / "ms-playwright"
 COMPOSE_URL = "https://x.com/compose/post"
 HOME_URL = "https://x.com/home"
+DEFAULT_REPLY_DELAY_SEC = 60.0
 
 
 def ensure_browsers_path() -> None:
-    """Playwright のブラウザをユーザーホーム配下から読む。"""
+    """Playwright のブラウザをユーザーホーム配下から読む（サンドボックス経路を上書き）。"""
     BROWSERS_PATH.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("PLAYWRIGHT_BROWSERS_PATH", str(BROWSERS_PATH))
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(BROWSERS_PATH)
 
 
 def browser_profile_dir() -> Path:
@@ -84,17 +85,48 @@ def _fill_composer(page, text: str) -> None:
         _sleep(0.4, 0.8)
 
 
-def _attach_image(page, image_path: Path) -> None:
-    """画像を添付する。"""
-    if not image_path.is_file():
-        raise FileNotFoundError(f"画像がありません: {image_path}")
+def _normalize_image_paths(
+    local_image_path: str | Path | None = None,
+    local_image_paths: list[str | Path] | None = None,
+    *,
+    max_count: int = 4,
+) -> list[Path]:
+    """添付画像パスを正規化する（最大 max_count）。"""
+    paths: list[Path] = []
+    if local_image_paths:
+        for item in local_image_paths:
+            if item is None:
+                continue
+            path = Path(item)
+            if path.is_file():
+                paths.append(path)
+            if len(paths) >= max_count:
+                break
+    elif local_image_path:
+        path = Path(local_image_path)
+        if path.is_file():
+            paths.append(path)
+    return paths[:max_count]
+
+
+def _attach_images(page, image_paths: list[Path]) -> None:
+    """画像を最大4枚添付する。"""
+    valid = [p for p in image_paths if p.is_file()][:4]
+    if not valid:
+        return
     file_input = page.locator('input[data-testid="fileInput"]').first
-    file_input.set_input_files(str(image_path))
+    file_input.set_input_files([str(p) for p in valid])
     page.locator('[data-testid="attachments"]').first.wait_for(
         state="visible",
         timeout=30000,
     )
     _sleep(0.8, 1.5)
+    logger.info("画像添付: %s 枚", len(valid))
+
+
+def _attach_image(page, image_path: Path) -> None:
+    """互換用: 1枚添付。"""
+    _attach_images(page, [image_path])
 
 
 def _dismiss_blocking_dialogs(page) -> None:
@@ -133,7 +165,6 @@ def _click_post(page) -> None:
     page.keyboard.press("Meta+Enter")
     _sleep(1.0, 1.5)
 
-    # まだ作曲欄が残っているならボタンも試す
     still = page.locator('[data-testid="tweetTextarea_0"]')
     try:
         if still.count() == 0 or not still.first.is_visible():
@@ -174,7 +205,6 @@ def _extract_tweet_id(payload: object) -> str | None:
         return None
     if result.get("rest_id"):
         return str(result["rest_id"])
-    # TweetWithVisibilityResults など
     tweet = result.get("tweet")
     if isinstance(tweet, dict) and tweet.get("rest_id"):
         return str(tweet["rest_id"])
@@ -227,7 +257,6 @@ def _submit_composer(page) -> str:
                 captured.append(tid)
                 logger.info("CreateTweet 応答 tweet_id=%s", tid)
                 return
-            # エラーメッセージを残す
             raw = json.dumps(data, ensure_ascii=False)[:500]
             errors.append(f"no_id body={raw}")
         except Exception as exc:  # noqa: BLE001
@@ -267,7 +296,6 @@ def _open_reply_composer(page, parent_tweet_id: str) -> None:
     url = f"https://x.com/i/web/status/{parent_tweet_id}"
     page.goto(url, wait_until="domcontentloaded")
     _sleep(1.5, 2.5)
-    # 画面下部またはインラインの返信欄
     box = page.locator('[data-testid="tweetTextarea_0"]').first
     try:
         box.wait_for(state="visible", timeout=8000)
@@ -361,17 +389,19 @@ def post_single_to_x_via_browser(
     text: str,
     *,
     local_image_path: str | None = None,
+    local_image_paths: list[str | Path] | None = None,
     headless: bool = True,
     profile_dir: Path | None = None,
 ) -> str:
     """
-    ブラウザで単発ポストする（リンク込み本文想定）。
+    ブラウザで単発ポストする。
 
     戻り値: tweet_id
     """
     body = (text or "").strip()
     if not body:
         raise ValueError("投稿文が空です。")
+    images = _normalize_image_paths(local_image_path, local_image_paths)
 
     try:
         from playwright.sync_api import sync_playwright
@@ -394,8 +424,8 @@ def post_single_to_x_via_browser(
             _sleep(1.0, 2.0)
             _dismiss_blocking_dialogs(page)
             _fill_composer(page, body)
-            if local_image_path:
-                _attach_image(page, Path(local_image_path))
+            if images:
+                _attach_images(page, images)
             tweet_id = _submit_composer(page)
             status_url = _open_status(page, tweet_id)
             logger.info("X ブラウザ投稿: 完了 %s", status_url)
@@ -414,11 +444,17 @@ def post_to_x_via_browser(
     reply_text: str,
     *,
     local_image_path: str | None = None,
+    local_image_paths: list[str | Path] | None = None,
+    reply_image_path: str | Path | None = None,
+    reply_delay_sec: float = DEFAULT_REPLY_DELAY_SEC,
     headless: bool = True,
     profile_dir: Path | None = None,
 ) -> tuple[str, str]:
     """
-    ブラウザで親ポスト→リンクリプライを投稿する。
+    ブラウザで親ポスト→約60秒後にリンクリプライを投稿する。
+
+    親: 画像最大4枚（URLなし想定）
+    リプ: クッションURL + WebPサムネ
 
     戻り値: (親tweet_id, リプライtweet_id)
     """
@@ -428,6 +464,14 @@ def post_to_x_via_browser(
         raise ValueError("親ポストが空です。")
     if not reply:
         raise ValueError("リプライが空です。")
+
+    parent_images = _normalize_image_paths(local_image_path, local_image_paths)
+    reply_images = _normalize_image_paths(
+        str(reply_image_path) if reply_image_path else None,
+        None,
+        max_count=1,
+    )
+    delay = max(0.0, float(reply_delay_sec))
 
     try:
         from playwright.sync_api import sync_playwright
@@ -445,22 +489,28 @@ def post_to_x_via_browser(
         page = context.pages[0] if context.pages else context.new_page()
         try:
             _ensure_logged_in(page)
-            logger.info("X ブラウザ投稿: 親ポストを作成します")
+            logger.info("X ブラウザ投稿: 親ポストを作成します（画像=%s）", len(parent_images))
             page.goto(COMPOSE_URL, wait_until="domcontentloaded")
             _sleep(1.0, 2.0)
             _dismiss_blocking_dialogs(page)
             _fill_composer(page, parent)
-            if local_image_path:
-                _attach_image(page, Path(local_image_path))
+            if parent_images:
+                _attach_images(page, parent_images)
             parent_id = _submit_composer(page)
             parent_url = _open_status(page, parent_id)
             logger.info("X ブラウザ投稿: 親完了 %s", parent_url)
+
+            if delay > 0:
+                logger.info("リプライまで %.0f 秒待機（1分ルール）", delay)
+                time.sleep(delay)
 
             logger.info("X ブラウザ投稿: リプライを作成します")
             try:
                 _open_reply_composer(page, parent_id)
                 _dismiss_blocking_dialogs(page)
                 _fill_composer(page, reply)
+                if reply_images:
+                    _attach_images(page, reply_images)
                 reply_id = _submit_composer(page)
                 logger.info("X ブラウザ投稿: リプライ完了 reply_id=%s", reply_id)
                 return parent_id, reply_id

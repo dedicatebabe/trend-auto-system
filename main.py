@@ -1,17 +1,18 @@
 # ==========================================
-# Version: 6.2.0
-# Date: 2026-09-26
-# Summary: 0件は静かに終了、ブランド外商品を公開前に除外
+# Version: 7.0.0
+# Date: 2026-09-27
+# Summary: 親URLなし＋60秒リプ送客、3h連投制限、アクティブ時間帯
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
 商品ページ直URL付き記事を生成して index 更新 → X スレッド投稿。
 
 件数ルール:
-- 各ショップの上位 RANKING_POOL(20) を見る
-- 1回の実行で各 PUBLISH_PER_SOURCE(5) 件まで記事化（最大15件）
+- 各ショップの上位 RANKING_POOL を見る
+- 1回の実行で各 PUBLISH_PER_SOURCE 件まで記事化
 - 主ショップは商品直URL、他ショップは商品名検索アフィ
 - X は既定でブラウザ投稿（X_POST_METHOD=browser）
+- 親ポストに外部URLなし → 約60秒後リプライでクッション送客
 """
 
 from __future__ import annotations
@@ -22,9 +23,11 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime, timezone
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote
+from zoneinfo import ZoneInfo
 
 try:
     from dotenv import load_dotenv
@@ -33,7 +36,11 @@ except ImportError:  # pragma: no cover
         return False
 
 from gemini_helper import analyze_product_with_gemini
-from modules.x_browser_poster import post_single_to_x_via_browser
+from modules.media_prep import prepare_parent_images, prepare_reply_webp
+from modules.x_browser_poster import (
+    DEFAULT_REPLY_DELAY_SEC,
+    post_to_x_via_browser,
+)
 from product_fetcher import (
     PUBLISH_PER_SOURCE,
     RANKING_POOL,
@@ -46,6 +53,11 @@ from url_generator import build_cross_shop_links
 
 SITE_URL = "https://dedicatebabe.github.io/trend-auto-system/"
 POSTED_JSON = "posted.json"
+REPOST_INTERVAL_HOURS = 3
+PARENT_FOOTER = "予約・在庫状況はリプライへ ↓"
+JST = ZoneInfo("Asia/Tokyo")
+# [start_hour, end_hour) in JST
+ACTIVE_WINDOWS = ((7, 9), (12, 13), (16, 20))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -103,6 +115,63 @@ def browser_headless() -> bool:
     }
 
 
+def reply_delay_sec() -> float:
+    """親→リプの待機秒数（既定60）。"""
+    raw = os.getenv("X_REPLY_DELAY_SEC", str(int(DEFAULT_REPLY_DELAY_SEC))).strip()
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return float(DEFAULT_REPLY_DELAY_SEC)
+
+
+def is_active_posting_hour(now: datetime | None = None) -> bool:
+    """投稿アクティブ時間帯か（JST）。"""
+    current = now or datetime.now(JST)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=JST)
+    else:
+        current = current.astimezone(JST)
+    hour = current.hour
+    return any(start <= hour < end for start, end in ACTIVE_WINDOWS)
+
+
+def _parse_posted_at(raw: object) -> datetime | None:
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    try:
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt
+    except ValueError:
+        return None
+
+
+def recent_product_skip_ids(
+    history: list[dict],
+    *,
+    hours: float = REPOST_INTERVAL_HOURS,
+) -> set[str]:
+    """同一商品の再投稿インターバル内の product_id 集合。"""
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    skip: set[str] = set()
+    for row in history:
+        pid = str(row.get("product_id", "")).strip()
+        if not pid:
+            continue
+        posted_at = _parse_posted_at(row.get("posted_at"))
+        if posted_at is None:
+            # 古い記録は安全側でスキップ継続
+            skip.add(pid)
+            continue
+        if posted_at >= cutoff:
+            skip.add(pid)
+    return skip
+
+
 def _x_client():
     import tweepy
 
@@ -123,39 +192,59 @@ def _tweet_id_from_response(response: object) -> str:
     return tweet_id
 
 
-def post_single_to_x_api(*, text: str) -> str:
-    """API で単発投稿。戻り値は tweet_id。"""
+def post_thread_to_x_api(
+    *,
+    parent_text: str,
+    reply_text: str,
+    delay_sec: float,
+) -> tuple[str, str]:
+    """API で親→待機→リプ。戻り値は (parent_id, reply_id)。"""
     from tweepy.errors import HTTPException
 
     client = _x_client()
     try:
-        response = client.create_tweet(text=text)
-        return _tweet_id_from_response(response)
+        parent_resp = client.create_tweet(text=parent_text)
+        parent_id = _tweet_id_from_response(parent_resp)
+        if delay_sec > 0:
+            logger.info("APIリプライまで %.0f 秒待機", delay_sec)
+            time.sleep(delay_sec)
+        reply_resp = client.create_tweet(
+            text=reply_text,
+            in_reply_to_tweet_id=parent_id,
+        )
+        reply_id = _tweet_id_from_response(reply_resp)
+        return parent_id, reply_id
     except HTTPException as exc:
         raise RuntimeError(f"X API error: {exc}") from exc
 
 
-def dispatch_x_post(*, text: str) -> str:
-    """設定に応じてブラウザまたは API で X 単発投稿する。"""
+def dispatch_x_thread(
+    *,
+    parent_text: str,
+    reply_text: str,
+    parent_image_paths: list[Path] | None = None,
+    reply_image_path: Path | None = None,
+) -> tuple[str, str]:
+    """設定に応じてブラウザまたは API で親＋リプ投稿する。"""
     method = x_post_method()
+    delay = reply_delay_sec()
     if method == "browser":
-        logger.info("X 投稿方式: browser（単発）")
-        return post_single_to_x_via_browser(
-            text,
+        logger.info("X 投稿方式: browser（親→%.0fs→リプ）", delay)
+        return post_to_x_via_browser(
+            parent_text,
+            reply_text,
+            local_image_paths=list(parent_image_paths or []),
+            reply_image_path=reply_image_path,
+            reply_delay_sec=delay,
             headless=browser_headless(),
         )
 
-    logger.info("X 投稿方式: api（単発）")
-    return post_single_to_x_api(text=text)
-
-
-def build_tweet(base: str, *, article_url: str) -> str:
-    """本文＋記事URLの単発投稿文。"""
-    body = re_strip_urls((base or "").strip())
-    url = (article_url or "").strip()
-    if url and url not in body:
-        body = f"{body}\n{url}".strip()
-    return body[:280]
+    logger.info("X 投稿方式: api（親→%.0fs→リプ・画像なし）", delay)
+    return post_thread_to_x_api(
+        parent_text=parent_text,
+        reply_text=reply_text,
+        delay_sec=delay,
+    )
 
 
 def re_strip_urls(text: str) -> str:
@@ -163,6 +252,30 @@ def re_strip_urls(text: str) -> str:
     cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
+
+
+def build_parent_tweet(base: str) -> str:
+    """親ポスト本文（外部URLなし・リプ誘導フッター付き）。"""
+    body = re_strip_urls((base or "").strip())
+    body = re.sub(
+        r"(予約・在庫状況はリプライへ\s*↓?|詳細は(?:こちら|リプライへ).*)",
+        "",
+        body,
+    ).strip()
+    if "#PR" not in body and "#pr" not in body.lower():
+        body = f"{body} #PR".strip()
+    if PARENT_FOOTER not in body:
+        body = f"{body}\n{PARENT_FOOTER}".strip()
+    return body[:280]
+
+
+def build_reply_tweet(*, article_url: str) -> str:
+    """リプライ本文（クッションURL + #PR）。"""
+    url = (article_url or "").strip()
+    if not url:
+        raise ValueError("article_url が空です。")
+    text = f"{url}\n#PR"
+    return text[:280]
 
 
 def _extract_rakuten_item_url(url: str) -> str:
@@ -185,6 +298,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Trend Pick product affiliate bot")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--skip-x", action="store_true")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="アクティブ時間外・同一商品インターバルを無視して実行",
+    )
     parser.add_argument(
         "--per-source",
         type=int,
@@ -213,6 +331,15 @@ def main() -> int:
     load_dotenv(root / ".env")
 
     try:
+        if not args.force and not is_active_posting_hour():
+            now = datetime.now(JST)
+            logger.info(
+                "アクティブ時間外のためスキップ（現在 %s JST）。"
+                "枠: 07-09 / 12-13 / 16-20。手動は --force",
+                now.strftime("%H:%M"),
+            )
+            return 0
+
         require_env("GEMINI_API_KEY")
         require_env("AMAZON_ASSOCIATE_TAG")
         require_env("RAKUTEN_AF_ID")
@@ -221,11 +348,18 @@ def main() -> int:
 
         posted_path = root / POSTED_JSON
         history = load_posted(posted_path)
-        skip_ids = {
-            str(p.get("product_id", "")).strip()
-            for p in history
-            if str(p.get("product_id", "")).strip()
-        }
+        if args.force:
+            skip_ids: set[str] = set()
+            logger.info("--force: 同一商品インターバルを無視")
+        else:
+            skip_ids = recent_product_skip_ids(history)
+            if skip_ids:
+                logger.info(
+                    "同一商品 %sh 以内スキップ: %s 件",
+                    REPOST_INTERVAL_HOURS,
+                    len(skip_ids),
+                )
+
         for entry in load_entries():
             src = (entry.source_link or "").strip()
             if "/dp/" in src:
@@ -288,6 +422,9 @@ def main() -> int:
                 primary_url=product.url,
                 product_name=str(analyzed["keyword"]) or product.title,
             )
+            image_url = getattr(product, "image_url", "") or ""
+            price_val = getattr(product, "price", None)
+            price_int = price_val if isinstance(price_val, int) else None
             entry = publish_article(
                 source_link=product.url,
                 title=article_title,
@@ -296,12 +433,13 @@ def main() -> int:
                 keyword=str(analyzed["keyword"]) or product.keyword,
                 links=links,
                 badge=product.badge,
-                image_url=getattr(product, "image_url", "") or "",
+                image_url=image_url,
+                price=price_int,
+                release_date="",
             )
             article_url = article_public_url(entry.article_id)
-            final_tweet = build_tweet(
-                str(analyzed["tweet_text"]), article_url=article_url
-            )
+            parent_tweet = build_parent_tweet(str(analyzed["tweet_text"]))
+            reply_tweet = build_reply_tweet(article_url=article_url)
             logger.info(
                 "article=%s source=%s links=%s",
                 article_url,
@@ -309,22 +447,55 @@ def main() -> int:
                 list(links),
             )
 
+            parent_paths = prepare_parent_images(
+                [image_url] if image_url else [],
+                max_count=4,
+            )
+            reply_webp = (
+                prepare_reply_webp(image_url)
+                if image_url and not args.dry_run and not args.skip_x
+                else None
+            )
+
             if args.dry_run:
-                logger.info("dry-run tweet:\n%s", final_tweet)
+                logger.info("dry-run parent:\n%s", parent_tweet)
+                logger.info("dry-run reply:\n%s", reply_tweet)
+                logger.info(
+                    "dry-run media parent=%s reply_webp=%s",
+                    len(parent_paths),
+                    bool(reply_webp),
+                )
                 published += 1
                 continue
 
             tweet_id = ""
+            reply_id = ""
             x_error = ""
             x_method = x_post_method()
             if args.skip_x:
                 logger.warning("--skip-x のため X 投稿をスキップ")
             else:
                 try:
-                    tweet_id = dispatch_x_post(text=final_tweet)
+                    tweet_id, reply_id = dispatch_x_thread(
+                        parent_text=parent_tweet,
+                        reply_text=reply_tweet,
+                        parent_image_paths=parent_paths,
+                        reply_image_path=reply_webp,
+                    )
                 except Exception as exc:  # noqa: BLE001
                     x_error = str(exc)
                     logger.error("X 投稿失敗（記事反映は継続）: %s", exc)
+
+            for path in parent_paths:
+                try:
+                    path.unlink(missing_ok=True)
+                except OSError:
+                    pass
+            if reply_webp and "docs/media" not in str(reply_webp):
+                try:
+                    reply_webp.unlink(missing_ok=True)
+                except OSError:
+                    pass
 
             history.append(
                 {
@@ -335,6 +506,7 @@ def main() -> int:
                     "article_id": entry.article_id,
                     "article_url": article_url,
                     "tweet_id": tweet_id,
+                    "reply_id": reply_id,
                     "x_method": x_method if not args.skip_x else "skipped",
                     "x_error": x_error,
                     "posted_at": datetime.now(timezone.utc).isoformat(),

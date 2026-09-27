@@ -1,7 +1,7 @@
 <!-- ==========================================
-Version: 4.0.0
-Date: 2026-09-20
-Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
+Version: 5.0.0
+Date: 2026-09-27
+Summary: FVマルチCTA・固定PR表記・外部フォント除去で高速化
 ========================================== -->
 <!DOCTYPE html>
 <html lang="ja">
@@ -17,12 +17,11 @@ Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
   <meta property="og:description" content="{{META_DESCRIPTION}}">
   <meta property="og:url" content="{{CANONICAL_URL}}">
   {{OG_IMAGE_TAG}}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Outfit:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="pr-bar" role="note">#PR / 本ページはアフィリエイト広告を利用しています</div>
+
   <header class="site-header">
     <div class="wrap-narrow header-inner">
       <a class="brand" href="index.html">Trend <span>Pick</span></a>
@@ -31,8 +30,6 @@ Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
   </header>
 
   <main class="article-main wrap-narrow">
-    <p class="aff-note">※本ページはアフィリエイト広告を利用しています</p>
-
     <article class="article">
       <div class="badge-row">
         <span class="badge {{BADGE_CLASS}}">{{BADGE}}</span>
@@ -41,13 +38,18 @@ Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
       <h1>{{PAGE_TITLE}}</h1>
       <p class="meta">{{PUBLISH_DATE}}</p>
 
-      {{PRODUCT_IMAGE}}
+      <section class="fv-deal" aria-label="予約・在庫の案内">
+        {{PRODUCT_IMAGE}}
+        <div class="deal-facts">
+          {{PRICE_BLOCK}}
+          {{RELEASE_BLOCK}}
+        </div>
+        {{SHOP_LINKS}}
+      </section>
 
       <div class="content">
         {{ARTICLE_BODY}}
       </div>
-
-      {{SHOP_LINKS}}
     </article>
 
     <a class="back" href="index.html">← トップへ戻る</a>

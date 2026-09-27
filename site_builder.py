@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 4.0.0
-# Date: 2026-09-20
-# Summary: AdSense/要約/FAQ削除、ショップリンクを一列に統一
+# Version: 5.0.0
+# Date: 2026-09-27
+# Summary: FVマルチCTA・定価/発売日・WebPキャッシュ対応
 # ==========================================
 """GitHub Pages 向けメディア型ページ生成。"""
 
@@ -12,6 +12,7 @@ import html
 import json
 import logging
 import re
+import shutil
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -92,6 +93,8 @@ class ArticleEntry:
     links: dict[str, str] = field(default_factory=dict)
     image_url: str = ""
     status: str = ""
+    price: int | None = None
+    release_date: str = ""
 
 
 def article_id_from_link(link: str) -> str:
@@ -212,6 +215,11 @@ def load_entries() -> list[ArticleEntry]:
             seed = int(seed_raw) if seed_raw is not None else _image_seed_from_id(aid)
         except (TypeError, ValueError):
             seed = _image_seed_from_id(aid)
+        price_raw = row.get("price")
+        try:
+            price_val = int(price_raw) if price_raw is not None and str(price_raw).strip() != "" else None
+        except (TypeError, ValueError):
+            price_val = None
         entries.append(
             ArticleEntry(
                 article_id=aid,
@@ -227,6 +235,8 @@ def load_entries() -> list[ArticleEntry]:
                 links={str(k): str(v) for k, v in (row.get("links") or {}).items()},
                 image_url=str(row.get("image_url", "") or "").strip(),
                 status=str(row.get("status", "") or "").strip(),
+                price=price_val,
+                release_date=str(row.get("release_date", "") or "").strip(),
             )
         )
     return entries
@@ -250,6 +260,8 @@ def save_entries(entries: list[ArticleEntry]) -> None:
                 "links": e.links,
                 "image_url": e.image_url,
                 "status": e.status,
+                "price": e.price,
+                "release_date": e.release_date,
             }
             for e in entries
         ]
@@ -359,9 +371,29 @@ def _product_image_html(image_url: str, *, title: str) -> str:
     return (
         f'<figure class="product-media">'
         f'<img src="{html.escape(url, quote=True)}" '
-        f'alt="{html.escape(title)}" loading="lazy" decoding="async" '
+        f'alt="{html.escape(title)}" width="640" height="640" '
+        f'fetchpriority="high" decoding="async" '
         f'referrerpolicy="no-referrer">'
         f"</figure>"
+    )
+
+
+def _price_block_html(price: int | None) -> str:
+    if not isinstance(price, int) or price <= 0:
+        return ""
+    return (
+        f'<p class="deal-price"><span class="deal-label">参考定価</span>'
+        f'<strong>{price:,}</strong><span class="deal-yen">円</span></p>'
+    )
+
+
+def _release_block_html(release_date: str) -> str:
+    text = (release_date or "").strip()
+    if not text:
+        return ""
+    return (
+        f'<p class="deal-release"><span class="deal-label">発売日</span>'
+        f'<strong>{html.escape(text)}</strong></p>'
     )
 
 
@@ -419,34 +451,60 @@ def _status_badge_html(status: str) -> str:
     return f'<span class="{cls}">{html.escape(label)}</span>'
 
 
+def _primary_shop_key(links: dict[str, str]) -> str:
+    """定価予約の主ボタン優先順位。"""
+    for key in ("amazon", "rakuten", "yahoo", "surugaya", "mercari"):
+        if (links.get(key) or "").strip():
+            return key
+    return ""
+
+
 def _shop_links_html(links: dict[str, str], *, has_product_links: bool) -> str:
-    """Amazon〜駿河屋まで同一デザインのショップリンク。"""
+    """FV用マルチCTA（主CTA＋在庫確認グリッド）。"""
     if not has_product_links:
         return ""
     mapping = (
-        ("amazon", "Amazon", "shop-amazon"),
-        ("rakuten", "楽天市場", "shop-rakuten"),
-        ("yahoo", "Yahoo!", "shop-yahoo"),
-        ("mercari", "メルカリ", "shop-mercari"),
-        ("surugaya", "駿河屋", "shop-surugaya"),
+        ("amazon", "Amazon", "shop-amazon", "cta-amazon"),
+        ("rakuten", "楽天市場", "shop-rakuten", "cta-rakuten"),
+        ("yahoo", "Yahoo!", "shop-yahoo", "cta-yahoo"),
+        ("mercari", "メルカリ", "shop-mercari", "cta-mercari"),
+        ("surugaya", "駿河屋", "shop-surugaya", "cta-surugaya"),
     )
-    buttons: list[str] = []
-    for key, label, cls in mapping:
-        url = (links.get(key) or "").strip()
-        if not url:
+    available = [
+        (key, label, shop_cls, cta_cls, (links.get(key) or "").strip())
+        for key, label, shop_cls, cta_cls in mapping
+        if (links.get(key) or "").strip()
+    ]
+    if not available:
+        return ""
+
+    primary_key = _primary_shop_key(links)
+    primary_html = ""
+    secondary: list[str] = []
+    for key, label, shop_cls, cta_cls, url in available:
+        href = html.escape(url, quote=True)
+        if key == primary_key and not primary_html:
+            primary_html = (
+                f'<a class="cta-primary {cta_cls}" href="{href}" '
+                f'rel="nofollow sponsored noopener" target="_blank">'
+                f'<span class="cta-micro">定価で予約する</span>'
+                f'<span class="cta-shop">{html.escape(label)}</span>'
+                f"</a>"
+            )
             continue
-        buttons.append(
-            f'<a class="shop-link {cls}" href="{html.escape(url, quote=True)}" '
+        secondary.append(
+            f'<a class="shop-link {shop_cls}" href="{href}" '
             f'rel="nofollow sponsored noopener" target="_blank">{html.escape(label)}</a>'
         )
-    if not buttons:
-        return ""
-    return (
-        '<section class="shop-panel" aria-label="各ショップで探す">'
-        '<p class="shop-panel-label">各ショップで探す</p>'
-        f'<div class="shop-grid">{"".join(buttons)}</div>'
-        "</section>"
-    )
+
+    parts = ['<section class="cta-panel" aria-label="予約・在庫への導線">']
+    if primary_html:
+        parts.append(primary_html)
+    if secondary:
+        parts.append('<p class="cta-sublabel">在庫・再販情報を確認</p>')
+        parts.append(f'<div class="shop-grid">{"".join(secondary)}</div>')
+    parts.append("</section>")
+    return "".join(parts)
 
 
 def _html_to_plain(fragment: str) -> str:
@@ -477,6 +535,15 @@ def _extract_content_plain_from_article(path: Path) -> str:
     return _html_to_plain(match.group(1))
 
 
+def sync_public_assets() -> None:
+    """templates/style.css を docs に同期する。"""
+    src = TEMPLATES / "style.css"
+    if not src.exists():
+        return
+    DOCS.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, DOCS / "style.css")
+
+
 def render_article_page(
     *,
     title: str,
@@ -490,6 +557,8 @@ def render_article_page(
     image_url: str = "",
     keyword: str = "",
     status: str = "",
+    price: int | None = None,
+    release_date: str = "",
 ) -> str:
     _ = source_link
     excerpt = _excerpt_from_body(body)
@@ -517,6 +586,8 @@ def render_article_page(
             "STATUS_BADGE": _status_badge_html(status_label),
             "PUBLISH_DATE": html.escape(created_at[:10]),
             "PRODUCT_IMAGE": _product_image_html(image_url, title=title),
+            "PRICE_BLOCK": _price_block_html(price),
+            "RELEASE_BLOCK": _release_block_html(release_date),
             "ARTICLE_BODY": _plain_to_paragraphs(body),
             "SHOP_LINKS": _shop_links_html(links, has_product_links=has_product_links),
             "YEAR": str(datetime.now(timezone.utc).year),
@@ -526,6 +597,7 @@ def render_article_page(
 
 def rebuild_all_article_pages() -> int:
     """既存エントリのレイアウトを新テンプレで再出力する。"""
+    sync_public_assets()
     entries = load_entries()
     count = 0
     for entry in entries:
@@ -545,6 +617,8 @@ def rebuild_all_article_pages() -> int:
             image_url=entry.image_url,
             keyword=entry.keyword,
             status=entry.status,
+            price=entry.price,
+            release_date=entry.release_date,
         )
         path.write_text(page, encoding="utf-8")
         count += 1
@@ -683,9 +757,14 @@ def publish_article(
     image_seed: int | None = None,
     image_url: str = "",
     status: str = "",
+    price: int | None = None,
+    release_date: str = "",
 ) -> ArticleEntry:
     """個別記事を書き、entries と index を更新する。"""
+    from modules.media_prep import cache_article_webp
+
     DOCS.mkdir(parents=True, exist_ok=True)
+    sync_public_assets()
     aid = article_id_from_link(source_link)
     filename = article_filename(aid)
     stamp = created_at or datetime.now(timezone.utc).isoformat()
@@ -699,7 +778,17 @@ def publish_article(
     )
     seed = image_seed if image_seed is not None else _image_seed_from_id(aid)
     image = (image_url or "").strip()
+    if image:
+        cached_url, _local = cache_article_webp(
+            image,
+            docs_dir=DOCS,
+            article_id=aid,
+            site_base=SITE_BASE,
+        )
+        if cached_url:
+            image = cached_url
     status_label = status or infer_status(title=title, body=body)
+    release = (release_date or "").strip()
     entry = ArticleEntry(
         article_id=aid,
         filename=filename,
@@ -714,6 +803,8 @@ def publish_article(
         links=links or {},
         image_url=image,
         status=status_label,
+        price=price if isinstance(price, int) and price > 0 else None,
+        release_date=release,
     )
 
     page = render_article_page(
@@ -728,6 +819,8 @@ def publish_article(
         image_url=image,
         keyword=keyword,
         status=status_label,
+        price=entry.price,
+        release_date=entry.release_date,
     )
     (DOCS / filename).write_text(page, encoding="utf-8")
     logger.info("個別記事を出力: %s", filename)

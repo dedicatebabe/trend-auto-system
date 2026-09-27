@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 3.0.0
-# Date: 2026-09-24
-# Summary: playwright追加（ブラウザ投稿用）
+# Version: 3.1.0
+# Date: 2026-09-27
+# Summary: Pillow追加（WebPサムネ生成）
 # ==========================================
 feedparser>=6.0.11
 google-genai>=1.0.0
@@ -9,3 +9,4 @@ tweepy>=4.14.0
 requests>=2.31.0
 python-dotenv>=1.0.0
 playwright>=1.40.0
+Pillow>=10.0.0

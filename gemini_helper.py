@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 4.1.0
-# Date: 2026-09-24
-# Summary: tweet_textルールを単発投稿（URLはコード側付与）に合わせて修正
+# Version: 5.0.0
+# Date: 2026-09-27
+# Summary: 速報/予約テンプレ（定価・完売喚起・#PR、URLなし）に改修
 # ==========================================
 """Gemini API によるニュース／商品解析ヘルパー。"""
 
@@ -64,11 +64,21 @@ PRODUCT_SYSTEM_PROMPT = """あなたは X アカウント「たいち＠アニ�
 - 3段落: ショップで在庫・価格が違うので比較して、という短い補足
 - 薄い紹介文は禁止。固有名詞を入れ、320〜520字
 
-tweet_text のルール:
-- Xの単発投稿用の本文。URLは絶対に書かない（記事URLはコードが末尾に付ける）
-- 80〜120字。掘り出しメモの口調。煽らない
-- 「詳細はこちら」「リンクはプロフ」「リプ欄」などの誘導定型は不要
-- 良い例: 「アニメ化ニュース見て原作とグッズ探してた。一気読みしたい人向けにメモった」
+tweet_text のルール（親ポスト用・外部URL禁止）:
+- URLは絶対に書かない（クッションURLはコードがリプライに付ける）
+- 「リプライへ」「詳細はこちら」「リンクはプロフ」などの誘導文も書かない（コード側で付与）
+- 次の骨格を厳守（改行あり）:
+  1行目: 【速報】または【予約開始】＋商品名（短く）
+  2行目: 定価：xxxx円（価格不明なら「定価：商品ページで確認」）
+  3行目: 定価確保はお早めに
+  末尾: #PR
+- ハッシュタグは #PR のみ（作品タグの乱発禁止）
+- 全体 90〜160字程度。過度な煽り・感嘆符連打は禁止
+- 予約・受注っぽい商品は【予約開始】、それ以外は【速報】
+- 良い例:
+  【予約開始】葬送のフリーレン 1/7フィギュア
+  定価：24,200円
+  定価確保はお早めに #PR
 
 必須キー:
 - article_title
@@ -243,6 +253,29 @@ def _fallback_result(news: NewsItem) -> dict[str, Any]:
     }
 
 
+def _tweet_kind_for_title(title: str) -> str:
+    """予約系なら予約開始、それ以外は速報。"""
+    text = title or ""
+    if any(x in text for x in ("予約", "受注", "予約受付", "予約開始")):
+        return "予約開始"
+    return "速報"
+
+
+def _format_flash_tweet(*, title: str, price: Any) -> str:
+    """速報/予約テンプレの親ポスト本文を組み立てる。"""
+    short = (title or "注目アイテム").strip()[:40]
+    kind = _tweet_kind_for_title(title)
+    if isinstance(price, int) and price > 0:
+        price_line = f"定価：{price:,}円"
+    else:
+        price_line = "定価：商品ページで確認"
+    return (
+        f"【{kind}】{short}\n"
+        f"{price_line}\n"
+        f"定価確保はお早めに #PR"
+    )
+
+
 def _fallback_product_result(product: Any) -> dict[str, Any]:
     title = str(getattr(product, "title", "") or "注目アイテム")
     price = getattr(product, "price", None)
@@ -260,7 +293,7 @@ def _fallback_product_result(product: Any) -> dict[str, Any]:
     return {
         "article_title": f"{short}、探しメモ",
         "article_body": body,
-        "tweet_text": f"{short}が気になったので探してメモ。グッズ探し中の人の参考に。",
+        "tweet_text": _format_flash_tweet(title=title, price=price),
         "keyword": short[:20],
     }
 
@@ -284,7 +317,8 @@ def analyze_product_with_gemini(
     user_prompt = (
         "次の商品を、たいち＠掘り出し物メモの口調で書いてください。\n"
         "見出しや箇条書きは使わず、段落だけのメモにしてください。\n"
-        "tweet_text に URL は入れないでください（記事リンクは後から付けます）。\n\n"
+        "tweet_text は速報/予約テンプレ（定価行・定価確保はお早めに・#PR）で、"
+        "URLとリプライ誘導は絶対に書かないでください。\n\n"
         f"商品名: {getattr(product, 'title', '')}\n"
         f"ショップ: {getattr(product, 'source', '')}\n"
         f"価格: {price if price is not None else '不明'}\n"
@@ -310,12 +344,21 @@ def analyze_product_with_gemini(
         logger.warning("商品Gemini生成失敗、フォールバック: %s", exc)
         return _fallback_product_result(product)
 
+    tweet_raw = str(data.get("tweet_text", "")).strip()
+    tweet_raw = re.sub(r"https?://\S+", "", tweet_raw).strip()
+    if "#PR" not in tweet_raw and "#pr" not in tweet_raw.lower():
+        tweet_raw = f"{tweet_raw} #PR".strip()
+    if "【速報】" not in tweet_raw and "【予約開始】" not in tweet_raw:
+        tweet_raw = _format_flash_tweet(
+            title=str(getattr(product, "title", "")),
+            price=price,
+        )
     result = {
         "article_title": str(data.get("article_title", "")).strip(),
         "article_body": _normalize_article_body(
             re.sub(r"<[^>]+>", "", str(data.get("article_body", ""))).strip()
         ),
-        "tweet_text": str(data.get("tweet_text", "")).strip()[:140],
+        "tweet_text": tweet_raw[:200],
         "keyword": str(data.get("keyword", "")).strip(),
     }
     if not result["article_title"] or not result["article_body"] or not result["tweet_text"]:
@@ -324,8 +367,6 @@ def analyze_product_with_gemini(
         logger.info("AIっぽいタイトルのためフォールバック: %s", result["article_title"][:40])
         fb = _fallback_product_result(product)
         result["article_title"] = fb["article_title"]
-        if _title_looks_ai(result["tweet_text"]):
-            result["tweet_text"] = fb["tweet_text"]
     if not result["keyword"]:
         result["keyword"] = str(getattr(product, "title", ""))[:20]
     return result

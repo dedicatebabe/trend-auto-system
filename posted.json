@@ -1380,6 +1380,45 @@
       "x_method": "browser",
       "x_error": "",
       "posted_at": "2026-09-26T23:01:00.229018+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/hobbyzakka-cha3/ho6862/",
+      "source": "rakuten",
+      "title": "【12月予約】ICCHI フィギュアキーホルダー 全5種コンプリートセット ガチャ 送料無料",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fhobbyzakka-cha3%2Fho6862%2F&link_type=text&id=0",
+      "article_id": "n_eb4d196ca6",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_eb4d196ca6.html",
+      "tweet_id": "",
+      "reply_id": "",
+      "x_method": "browser",
+      "x_error": "ブラウザを起動できません。ターミナルで次を実行してください:\n  PLAYWRIGHT_BROWSERS_PATH=\"/Users/shin/Library/Caches/ms-playwright\" /Users/shin/anaconda3/bin/playwright install chromium",
+      "posted_at": "2026-09-27T00:23:29.051357+00:00"
+    },
+    {
+      "product_id": "rakuten:https://item.rakuten.co.jp/hobbyzakka-cha3/ho6862/",
+      "source": "rakuten",
+      "title": "【12月予約】ICCHI フィギュアキーホルダー 全5種コンプリートセット ガチャ 送料無料",
+      "url": "https://hb.afl.rakuten.co.jp/ichiba/57942297.91d487a3.57942298.68d03d5d/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fhobbyzakka-cha3%2Fho6862%2F&link_type=text&id=0",
+      "article_id": "n_eb4d196ca6",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_eb4d196ca6.html",
+      "tweet_id": "",
+      "reply_id": "",
+      "x_method": "browser",
+      "x_error": "ブラウザを起動できません。ターミナルで次を実行してください:\n  PLAYWRIGHT_BROWSERS_PATH=\"/Users/shin/Library/Caches/ms-playwright\" /Users/shin/anaconda3/bin/playwright install chromium",
+      "posted_at": "2026-09-27T00:24:20.204574+00:00"
+    },
+    {
+      "product_id": "amazon:B0DVSWYW27",
+      "source": "amazon",
+      "title": "figma Splatoon/Splatoon2 ガール DXエディション ノンスケール プラスチック製 塗装済み可動フィギュア 再販",
+      "url": "https://www.amazon.co.jp/dp/B0DVSWYW27?tag=djtaikutsu-22",
+      "article_id": "n_af291ba9e1",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_af291ba9e1.html",
+      "tweet_id": "2104004576294981856",
+      "reply_id": "2104004874426065083",
+      "x_method": "browser",
+      "x_error": "",
+      "posted_at": "2026-09-27T00:27:09.336770+00:00"
     }
   ]
 }
