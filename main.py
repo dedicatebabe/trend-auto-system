@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 7.0.0
-# Date: 2026-09-27
-# Summary: 親URLなし＋60秒リプ送客、3h連投制限、アクティブ時間帯
+# Version: 7.1.1
+# Date: 2026-10-18
+# Summary: 需要ベース選定の採用理由をログ出力
 # ==========================================
 """
 Amazon / 楽天 / メルカリの売れ筋から商品を取得し、
@@ -47,13 +47,17 @@ from product_fetcher import (
     fetch_all_marketplace_products,
     is_on_brand_product,
     is_usable_product_title,
+    normalize_product_id,
+    title_fingerprint,
 )
 from site_builder import article_public_url, load_entries, publish_article
 from url_generator import build_cross_shop_links
 
 SITE_URL = "https://dedicatebabe.github.io/trend-auto-system/"
 POSTED_JSON = "posted.json"
-REPOST_INTERVAL_HOURS = 3
+# 同一商品の再投稿クールダウン（成功投稿はより長く）
+REPOST_COOLDOWN_DAYS = 7
+REPOST_SUCCESS_COOLDOWN_DAYS = 30
 PARENT_FOOTER = "予約・在庫状況はリプライへ ↓"
 JST = ZoneInfo("Asia/Tokyo")
 # [start_hour, end_hour) in JST
@@ -153,23 +157,46 @@ def _parse_posted_at(raw: object) -> datetime | None:
 def recent_product_skip_ids(
     history: list[dict],
     *,
-    hours: float = REPOST_INTERVAL_HOURS,
+    days: float = REPOST_COOLDOWN_DAYS,
+    success_days: float = REPOST_SUCCESS_COOLDOWN_DAYS,
 ) -> set[str]:
-    """同一商品の再投稿インターバル内の product_id 集合。"""
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    """同一商品の再投稿クールダウン内の product_id 集合（正規化済み）。"""
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=days)
+    success_cutoff = now - timedelta(days=success_days)
     skip: set[str] = set()
     for row in history:
-        pid = str(row.get("product_id", "")).strip()
+        pid = normalize_product_id(str(row.get("product_id", "")))
         if not pid:
             continue
         posted_at = _parse_posted_at(row.get("posted_at"))
         if posted_at is None:
-            # 古い記録は安全側でスキップ継続
             skip.add(pid)
             continue
-        if posted_at >= cutoff:
+        has_tweet = bool(str(row.get("tweet_id", "")).strip())
+        if has_tweet and posted_at >= success_cutoff:
+            skip.add(pid)
+        elif posted_at >= cutoff:
             skip.add(pid)
     return skip
+
+
+def recent_title_fingerprints(
+    history: list[dict],
+    *,
+    days: float = REPOST_SUCCESS_COOLDOWN_DAYS,
+) -> set[str]:
+    """直近投稿タイトルの指紋集合（表記ゆれの同一商品を抑止）。"""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    out: set[str] = set()
+    for row in history:
+        fp = title_fingerprint(str(row.get("title", "")))
+        if not fp:
+            continue
+        posted_at = _parse_posted_at(row.get("posted_at"))
+        if posted_at is None or posted_at >= cutoff:
+            out.add(fp)
+    return out
 
 
 def _x_client():
@@ -301,7 +328,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="アクティブ時間外・同一商品インターバルを無視して実行",
+        help="アクティブ時間外でも実行（同一商品の再投稿抑制は維持）",
+    )
+    parser.add_argument(
+        "--allow-repost",
+        action="store_true",
+        help="同一商品の再投稿クールダウンを無視（検証用）",
     )
     parser.add_argument(
         "--per-source",
@@ -348,16 +380,20 @@ def main() -> int:
 
         posted_path = root / POSTED_JSON
         history = load_posted(posted_path)
-        if args.force:
-            skip_ids: set[str] = set()
-            logger.info("--force: 同一商品インターバルを無視")
+        skip_ids: set[str] = set()
+        skip_titles: set[str] = set()
+        if args.allow_repost:
+            logger.info("--allow-repost: 同一商品クールダウンを無視")
         else:
             skip_ids = recent_product_skip_ids(history)
-            if skip_ids:
+            skip_titles = recent_title_fingerprints(history)
+            if skip_ids or skip_titles:
                 logger.info(
-                    "同一商品 %sh 以内スキップ: %s 件",
-                    REPOST_INTERVAL_HOURS,
+                    "同一商品スキップ: id=%s / title=%s（成功投稿%sdays / 通常%sdays）",
                     len(skip_ids),
+                    len(skip_titles),
+                    REPOST_SUCCESS_COOLDOWN_DAYS,
+                    REPOST_COOLDOWN_DAYS,
                 )
 
         for entry in load_entries():
@@ -365,18 +401,21 @@ def main() -> int:
             if "/dp/" in src:
                 asin = src.split("/dp/")[-1].split("?")[0].split("/")[0]
                 if asin:
-                    skip_ids.add(f"amazon:{asin}")
+                    skip_ids.add(normalize_product_id(f"amazon:{asin}"))
             raw_rk = _extract_rakuten_item_url(src)
             if raw_rk:
-                skip_ids.add(f"rakuten:{raw_rk}")
+                skip_ids.add(normalize_product_id(f"rakuten:{raw_rk}"))
+            fp = title_fingerprint(entry.title)
+            if fp:
+                skip_titles.add(fp)
             for key, url in (entry.links or {}).items():
                 if key == "amazon" and "/dp/" in url:
                     asin = url.split("/dp/")[-1].split("?")[0].split("/")[0]
-                    skip_ids.add(f"amazon:{asin}")
+                    skip_ids.add(normalize_product_id(f"amazon:{asin}"))
                 if key == "rakuten":
                     raw = _extract_rakuten_item_url(url)
                     if raw:
-                        skip_ids.add(f"rakuten:{raw}")
+                        skip_ids.add(normalize_product_id(f"rakuten:{raw}"))
 
         products = fetch_all_marketplace_products(
             pool=max(1, args.pool),
@@ -403,6 +442,22 @@ def main() -> int:
             ):
                 logger.warning("ブランド外/ゴミタイトルのためスキップ: %s", product.title[:60])
                 continue
+
+            pid = normalize_product_id(product.product_id)
+            fp = title_fingerprint(product.title)
+            if not args.allow_repost and (pid in skip_ids or (fp and fp in skip_titles)):
+                logger.info("同一商品のためスキップ: %s", product.title[:60])
+                continue
+
+            extra = getattr(product, "extra", {}) or {}
+            logger.info(
+                "選定候補: score=%s cat=%s basis=%s reason=%s title=%s",
+                extra.get("demand_score", product.score),
+                extra.get("demand_category", ""),
+                extra.get("demand_source", ""),
+                str(extra.get("select_reason", ""))[:120],
+                product.title[:60],
+            )
 
             analyzed = analyze_product_with_gemini(product)
             article_title = str(analyzed["article_title"])
@@ -451,11 +506,16 @@ def main() -> int:
                 [image_url] if image_url else [],
                 max_count=4,
             )
-            reply_webp = (
-                prepare_reply_webp(image_url)
-                if image_url and not args.dry_run and not args.skip_x
-                else None
-            )
+            # 親に商品画像がある場合、リプへ同一画像を重ねると見た目が重複するので付けない。
+            # 親が0枚のときだけリプに WebP サムネを付ける。
+            reply_webp = None
+            if (
+                image_url
+                and not parent_paths
+                and not args.dry_run
+                and not args.skip_x
+            ):
+                reply_webp = prepare_reply_webp(image_url)
 
             if args.dry_run:
                 logger.info("dry-run parent:\n%s", parent_tweet)
@@ -513,6 +573,10 @@ def main() -> int:
                 }
             )
             save_posted(posted_path, history[-300:])
+            if pid:
+                skip_ids.add(pid)
+            if fp:
+                skip_titles.add(fp)
             published += 1
 
         if args.dry_run:

@@ -1,7 +1,7 @@
 # ==========================================
-# Version: 5.0.0
+# Version: 5.1.0
 # Date: 2026-09-27
-# Summary: 速報/予約テンプレ（定価・完売喚起・#PR、URLなし）に改修
+# Summary: tweetをメモ調に戻しつつ速報ラベルは維持
 # ==========================================
 """Gemini API によるニュース／商品解析ヘルパー。"""
 
@@ -67,18 +67,19 @@ PRODUCT_SYSTEM_PROMPT = """あなたは X アカウント「たいち＠アニ�
 tweet_text のルール（親ポスト用・外部URL禁止）:
 - URLは絶対に書かない（クッションURLはコードがリプライに付ける）
 - 「リプライへ」「詳細はこちら」「リンクはプロフ」などの誘導文も書かない（コード側で付与）
-- 次の骨格を厳守（改行あり）:
-  1行目: 【速報】または【予約開始】＋商品名（短く）
-  2行目: 定価：xxxx円（価格不明なら「定価：商品ページで確認」）
-  3行目: 定価確保はお早めに
-  末尾: #PR
-- ハッシュタグは #PR のみ（作品タグの乱発禁止）
-- 全体 90〜160字程度。過度な煽り・感嘆符連打は禁止
+- 口調はたいちの掘り出しメモのまま（「気になったのでメモ」「拾ってみた」）
+- 冒頭だけ速報感を出す: 【速報】または【予約開始】を必ず付ける
 - 予約・受注っぽい商品は【予約開始】、それ以外は【速報】
+- 定価（または参考価格）を自然な一文で触れる。不明なら無理に数字を作らない
+- 完売・取りこぼしリスクは煽らず短く（例: 「定価で押さえるなら早めが見やすいかも」）
+- 末尾に #PR。ハッシュタグは #PR のみ
+- 全体 80〜140字。カタログ口調・感嘆符連打・マーケコピー禁止
 - 良い例:
-  【予約開始】葬送のフリーレン 1/7フィギュア
-  定価：24,200円
-  定価確保はお早めに #PR
+  【速報】『葬送のフリーレン』1/7、再販を拾ってみた
+  定価24,200円前後。気になる人は早めに見た方がよさそう #PR
+- 良い例:
+  【予約開始】ワンピカード新弾BOX、予約状況のメモ
+  定価はページで確認。定価確保なら早いうちが安心 #PR
 
 必須キー:
 - article_title
@@ -262,18 +263,28 @@ def _tweet_kind_for_title(title: str) -> str:
 
 
 def _format_flash_tweet(*, title: str, price: Any) -> str:
-    """速報/予約テンプレの親ポスト本文を組み立てる。"""
-    short = (title or "注目アイテム").strip()[:40]
+    """速報ラベル付き・メモ調の親ポスト本文を組み立てる。"""
+    short = (title or "注目アイテム").strip()[:36]
     kind = _tweet_kind_for_title(title)
     if isinstance(price, int) and price > 0:
-        price_line = f"定価：{price:,}円"
+        price_bit = f"定価{price:,}円前後。"
     else:
-        price_line = "定価：商品ページで確認"
+        price_bit = "定価は商品ページで確認。"
     return (
-        f"【{kind}】{short}\n"
-        f"{price_line}\n"
-        f"定価確保はお早めに #PR"
+        f"【{kind}】{short}、拾ってメモ\n"
+        f"{price_bit}定価で押さえるなら早めが見やすいかも #PR"
     )
+
+
+def _ensure_flash_label(tweet: str, *, title: str) -> str:
+    """メモ調本文を保ったまま、冒頭に速報ラベルがなければ付ける。"""
+    body = (tweet or "").strip()
+    if not body:
+        return body
+    if "【速報】" in body or "【予約開始】" in body:
+        return body
+    kind = _tweet_kind_for_title(title)
+    return f"【{kind}】{body}"
 
 
 def _fallback_product_result(product: Any) -> dict[str, Any]:
@@ -317,7 +328,8 @@ def analyze_product_with_gemini(
     user_prompt = (
         "次の商品を、たいち＠掘り出し物メモの口調で書いてください。\n"
         "見出しや箇条書きは使わず、段落だけのメモにしてください。\n"
-        "tweet_text は速報/予約テンプレ（定価行・定価確保はお早めに・#PR）で、"
+        "tweet_text もメモ調のまま、冒頭に【速報】か【予約開始】を付け、"
+        "定価と早め確認の一文を自然に入れてください。"
         "URLとリプライ誘導は絶対に書かないでください。\n\n"
         f"商品名: {getattr(product, 'title', '')}\n"
         f"ショップ: {getattr(product, 'source', '')}\n"
@@ -346,9 +358,20 @@ def analyze_product_with_gemini(
 
     tweet_raw = str(data.get("tweet_text", "")).strip()
     tweet_raw = re.sub(r"https?://\S+", "", tweet_raw).strip()
+    tweet_raw = _ensure_flash_label(
+        tweet_raw,
+        title=str(getattr(product, "title", "")),
+    )
     if "#PR" not in tweet_raw and "#pr" not in tweet_raw.lower():
         tweet_raw = f"{tweet_raw} #PR".strip()
-    if "【速報】" not in tweet_raw and "【予約開始】" not in tweet_raw:
+    # カタログ口調に寄りすぎた場合だけフォールバックへ寄せる
+    catalogish = (
+        "定価確保はお早めに" in tweet_raw
+        and "メモ" not in tweet_raw
+        and "拾" not in tweet_raw
+        and "気にな" not in tweet_raw
+    )
+    if catalogish or len(tweet_raw) < 20:
         tweet_raw = _format_flash_tweet(
             title=str(getattr(product, "title", "")),
             price=price,
