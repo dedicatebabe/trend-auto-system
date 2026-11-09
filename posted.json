@@ -3005,6 +3005,19 @@
       "x_method": "browser",
       "x_error": "",
       "posted_at": "2026-11-08T09:03:12.055703+00:00"
+    },
+    {
+      "product_id": "amazon:B0HB3JQ6P4",
+      "source": "amazon",
+      "title": "バンダイ(BANDAI) ONE PIECEカードゲーム エクストラブースター ONE PIECE Heroines Edition vol.2【EB-05】 (BOX)24パック入り",
+      "url": "https://www.amazon.co.jp/dp/B0HB3JQ6P4?tag=djtaikutsu-22",
+      "article_id": "n_f0a6ac11e3",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_f0a6ac11e3.html",
+      "tweet_id": "",
+      "reply_id": "",
+      "x_method": "browser",
+      "x_error": "Locator.wait_for: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"[data-testid=\\\"tweetTextarea_0\\\"]\").first to be visible\n",
+      "posted_at": "2026-11-09T03:17:42.279198+00:00"
     }
   ]
 }
