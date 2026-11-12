@@ -3057,6 +3057,19 @@
       "x_method": "browser",
       "x_error": "X のホームを認識できません。再ログインしてください（python scripts/x_browser_login.py）。",
       "posted_at": "2026-11-10T09:02:38.237336+00:00"
+    },
+    {
+      "product_id": "amazon:B0H8BPQHQN",
+      "source": "amazon",
+      "title": "[バンダイ(BANDAI)] Original Tamagotchi 30th Anniversary Tama Space 対象年齢 6 才以上 たまごっち",
+      "url": "https://www.amazon.co.jp/dp/B0H8BPQHQN?tag=djtaikutsu-22",
+      "article_id": "n_a265097636",
+      "article_url": "https://dedicatebabe.github.io/trend-auto-system/article_n_a265097636.html",
+      "tweet_id": "",
+      "reply_id": "",
+      "x_method": "browser",
+      "x_error": "Locator.wait_for: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"[data-testid=\\\"tweetTextarea_0\\\"]\").first to be visible\n",
+      "posted_at": "2026-11-12T03:17:18.082394+00:00"
     }
   ]
 }
